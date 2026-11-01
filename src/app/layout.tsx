@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/app-shell";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -20,8 +20,7 @@ export const metadata: Metadata = {
     default: "Meridian — Market operations",
     template: "%s — Meridian",
   },
-  description:
-    "Market operations console for portfolio performance, forecast attainment and risk.",
+  description: "Market operations console for portfolio performance, forecast attainment and risk.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

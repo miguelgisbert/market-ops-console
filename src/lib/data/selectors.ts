@@ -101,11 +101,8 @@ export function getPortfolioSummary(dataset: Dataset): PortfolioSummary {
     revenueUsd: totals.revenueUsd,
     growthPct: ((totals.revenueUsd - totals.priorYearUsd) / totals.priorYearUsd) * 100,
     forecastAttainmentPct: (totals.revenueUsd / totals.forecastUsd) * 100,
-    marketsAtRisk: dataset.markets.filter((market) => market.kpis.status !== "on-track")
-      .length,
-    marketsOffTrack: dataset.markets.filter(
-      (market) => market.kpis.status === "off-track",
-    ).length,
+    marketsAtRisk: dataset.markets.filter((market) => market.kpis.status !== "on-track").length,
+    marketsOffTrack: dataset.markets.filter((market) => market.kpis.status === "off-track").length,
     marketCount: dataset.markets.length,
     latestPeriod: dataset.metadata.periods[dataset.metadata.periods.length - 1],
   };
@@ -115,30 +112,20 @@ export function getRegionSummaries(dataset: Dataset): RegionSummary[] {
   const markets = getMarketSummaries(dataset);
   return dataset.regions.map((region) => {
     const regionMarkets = markets.filter((market) => market.regionId === region.id);
-    const revenueUsd = regionMarkets.reduce(
-      (total, market) => total + market.revenueUsd,
-      0,
-    );
+    const revenueUsd = regionMarkets.reduce((total, market) => total + market.revenueUsd, 0);
     const forecastUsd = dataset.markets
       .filter((market) => market.regionId === region.id)
-      .reduce(
-        (total, market) => total + latestPoint(market).forecast * market.fxToUsd,
-        0,
-      );
+      .reduce((total, market) => total + latestPoint(market).forecast * market.fxToUsd, 0);
     const priorYearUsd = dataset.markets
       .filter((market) => market.regionId === region.id)
-      .reduce(
-        (total, market) => total + latestPoint(market).priorYear * market.fxToUsd,
-        0,
-      );
+      .reduce((total, market) => total + latestPoint(market).priorYear * market.fxToUsd, 0);
     return {
       id: region.id,
       name: region.name,
       revenueUsd,
       growthPct: ((revenueUsd - priorYearUsd) / priorYearUsd) * 100,
       forecastAttainmentPct: (revenueUsd / forecastUsd) * 100,
-      marketsAtRisk: regionMarkets.filter((market) => market.status !== "on-track")
-        .length,
+      marketsAtRisk: regionMarkets.filter((market) => market.status !== "on-track").length,
       marketCount: regionMarkets.length,
     };
   });
@@ -154,9 +141,7 @@ export function getProductSummaries(dataset: Dataset): ProductSummary[] {
     .map((product) => {
       const productTotals = dataset.markets.reduce(
         (accumulator, market) => {
-          const productMarket = market.products.find(
-            (entry) => entry.productId === product.id,
-          );
+          const productMarket = market.products.find((entry) => entry.productId === product.id);
           if (!productMarket) return accumulator;
           const point = productMarket.series[productMarket.series.length - 1];
           return {
@@ -169,11 +154,9 @@ export function getProductSummaries(dataset: Dataset): ProductSummary[] {
       );
 
       const growthPct =
-        ((productTotals.revenueUsd - productTotals.priorYearUsd) /
-          productTotals.priorYearUsd) *
+        ((productTotals.revenueUsd - productTotals.priorYearUsd) / productTotals.priorYearUsd) *
         100;
-      const attainment =
-        (productTotals.revenueUsd / productTotals.forecastUsd) * 100;
+      const attainment = (productTotals.revenueUsd / productTotals.forecastUsd) * 100;
 
       return {
         id: product.id,

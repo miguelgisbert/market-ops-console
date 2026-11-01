@@ -3,10 +3,7 @@ import type { MarketStatus } from "@/lib/data";
 import { statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const statusStyles: Record<
-  MarketStatus,
-  { className: string; icon: typeof CheckCircle2 }
-> = {
+const statusStyles: Record<MarketStatus, { className: string; icon: typeof CheckCircle2 }> = {
   "on-track": {
     className: "border-status-ontrack/35 bg-status-ontrack/8 text-status-ontrack",
     icon: CheckCircle2,
@@ -21,13 +18,7 @@ const statusStyles: Record<
   },
 };
 
-export function StatusBadge({
-  status,
-  className,
-}: {
-  status: MarketStatus;
-  className?: string;
-}) {
+export function StatusBadge({ status, className }: { status: MarketStatus; className?: string }) {
   const style = statusStyles[status];
   const Icon = style.icon;
   return (

@@ -1,14 +1,10 @@
-import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { AttentionList, type AttentionItem } from "@/components/dashboard/attention-list";
+import Link from "next/link";
+import { type AttentionItem, AttentionList } from "@/components/dashboard/attention-list";
 import { KpiBand, type KpiMetric } from "@/components/dashboard/kpi-band";
 import { MarketTable } from "@/components/dashboard/market-table";
 import { MarketTape } from "@/components/dashboard/market-tape";
-import {
-  getDataset,
-  getMarketSummaries,
-  getPortfolioSummary,
-} from "@/lib/data";
+import { getDataset, getMarketSummaries, getPortfolioSummary } from "@/lib/data";
 import { formatCurrency, formatPercent, formatPeriodLabel } from "@/lib/format";
 
 function riskRank(status: "on-track" | "at-risk" | "off-track"): number {
@@ -82,8 +78,8 @@ export default function OverviewPage() {
             Portfolio overview
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Twelve markets, five products, one view of where the portfolio is
-            winning and where the forecast is slipping.
+            Twelve markets, five products, one view of where the portfolio is winning and where the
+            forecast is slipping.
           </p>
         </div>
         <div className="flex shrink-0 items-stretch border bg-card">

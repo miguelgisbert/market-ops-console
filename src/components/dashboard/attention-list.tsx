@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import type { MarketStatus } from "@/lib/data";
 import { formatPeriodLabel } from "@/lib/format";
 import { StatusBadge } from "./status-badge";
@@ -44,10 +44,7 @@ export function AttentionList({ items }: { items: AttentionItem[] }) {
                     className="inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {item.name}
-                    <ArrowUpRight
-                      aria-hidden="true"
-                      className="size-3 text-muted-foreground"
-                    />
+                    <ArrowUpRight aria-hidden="true" className="size-3 text-muted-foreground" />
                   </Link>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {item.regionName} · {formatPeriodLabel(item.period)}
@@ -55,9 +52,7 @@ export function AttentionList({ items }: { items: AttentionItem[] }) {
                 </div>
                 <StatusBadge status={item.status} />
               </div>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {item.note}
-              </p>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{item.note}</p>
             </li>
           ))}
         </ol>

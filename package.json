@@ -6,8 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "lint": "biome check .",
+    "typecheck": "next typegen && tsc --noEmit",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -21,13 +22,11 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.4.3",
-    "shadcn": "^4.23.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

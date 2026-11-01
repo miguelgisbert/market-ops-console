@@ -38,21 +38,14 @@ export function MarketTape({ markets }: { markets: MarketSummary[] }) {
             >
               <span
                 aria-hidden="true"
-                className={cn(
-                  "absolute inset-x-0 top-0 h-[3px]",
-                  statusRail[market.status],
-                )}
+                className={cn("absolute inset-x-0 top-0 h-[3px]", statusRail[market.status])}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[11px] font-medium">
-                  {market.iso2}
-                </span>
+                <span className="font-mono text-[11px] font-medium">{market.iso2}</span>
                 <span
                   className={cn(
                     "font-mono text-[10px] tabular-nums",
-                    market.growthPct >= 0
-                      ? "text-status-ontrack"
-                      : "text-status-offtrack",
+                    market.growthPct >= 0 ? "text-status-ontrack" : "text-status-offtrack",
                   )}
                 >
                   {formatPercent(market.growthPct, { signed: true })}
@@ -65,10 +58,7 @@ export function MarketTape({ markets }: { markets: MarketSummary[] }) {
                 </span>
                 <span className="text-[10px] text-muted-foreground">of plan</span>
               </div>
-              <div
-                aria-hidden="true"
-                className="mt-2 h-1 overflow-hidden rounded-full bg-muted"
-              >
+              <div aria-hidden="true" className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className={cn("h-full", statusRail[market.status])}
                   style={{
@@ -84,10 +74,7 @@ export function MarketTape({ markets }: { markets: MarketSummary[] }) {
               >
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    "size-1.5 rounded-full",
-                    statusRail[market.status],
-                  )}
+                  className={cn("size-1.5 rounded-full", statusRail[market.status])}
                 />
                 {statusLabel(market.status)}
               </p>

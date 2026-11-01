@@ -1,4 +1,10 @@
-import { datasetSchema, type Dataset, type KpiSnapshot, type MarketStatus, type TimeSeriesPoint } from "./schema";
+import {
+  type Dataset,
+  datasetSchema,
+  type KpiSnapshot,
+  type MarketStatus,
+  type TimeSeriesPoint,
+} from "./schema";
 
 const PERIOD_COUNT = 24;
 const GENERATION_COUNT = PERIOD_COUNT + 12;
@@ -24,25 +30,157 @@ type ProductSeed = {
 };
 
 const marketSeeds: MarketSeed[] = [
-  { id: "us", name: "United States", iso2: "US", regionId: "north-america", currency: "USD", fxToUsd: 1, baseRevenueUsd: 4_200_000, performanceBias: 0.02, unitPriceUsd: 640 },
-  { id: "ca", name: "Canada", iso2: "CA", regionId: "north-america", currency: "CAD", fxToUsd: 0.73, baseRevenueUsd: 1_100_000, performanceBias: 0.01, unitPriceUsd: 590 },
-  { id: "mx", name: "Mexico", iso2: "MX", regionId: "north-america", currency: "MXN", fxToUsd: 0.058, baseRevenueUsd: 700_000, performanceBias: -0.01, unitPriceUsd: 410 },
-  { id: "gb", name: "United Kingdom", iso2: "GB", regionId: "europe", currency: "GBP", fxToUsd: 1.27, baseRevenueUsd: 1_800_000, performanceBias: 0, unitPriceUsd: 620 },
-  { id: "de", name: "Germany", iso2: "DE", regionId: "europe", currency: "EUR", fxToUsd: 1.08, baseRevenueUsd: 2_100_000, performanceBias: -0.1, unitPriceUsd: 650 },
-  { id: "fr", name: "France", iso2: "FR", regionId: "europe", currency: "EUR", fxToUsd: 1.08, baseRevenueUsd: 1_600_000, performanceBias: 0.01, unitPriceUsd: 630 },
-  { id: "es", name: "Spain", iso2: "ES", regionId: "europe", currency: "EUR", fxToUsd: 1.08, baseRevenueUsd: 900_000, performanceBias: -0.06, unitPriceUsd: 560 },
-  { id: "jp", name: "Japan", iso2: "JP", regionId: "apac", currency: "JPY", fxToUsd: 0.0067, baseRevenueUsd: 2_400_000, performanceBias: -0.05, unitPriceUsd: 680 },
-  { id: "au", name: "Australia", iso2: "AU", regionId: "apac", currency: "AUD", fxToUsd: 0.66, baseRevenueUsd: 1_200_000, performanceBias: 0.02, unitPriceUsd: 610 },
-  { id: "in", name: "India", iso2: "IN", regionId: "apac", currency: "INR", fxToUsd: 0.012, baseRevenueUsd: 800_000, performanceBias: 0.05, unitPriceUsd: 360 },
-  { id: "br", name: "Brazil", iso2: "BR", regionId: "latam", currency: "BRL", fxToUsd: 0.18, baseRevenueUsd: 900_000, performanceBias: -0.02, unitPriceUsd: 430 },
-  { id: "ar", name: "Argentina", iso2: "AR", regionId: "latam", currency: "ARS", fxToUsd: 0.0011, baseRevenueUsd: 350_000, performanceBias: -0.15, unitPriceUsd: 390 },
+  {
+    id: "us",
+    name: "United States",
+    iso2: "US",
+    regionId: "north-america",
+    currency: "USD",
+    fxToUsd: 1,
+    baseRevenueUsd: 4_200_000,
+    performanceBias: 0.02,
+    unitPriceUsd: 640,
+  },
+  {
+    id: "ca",
+    name: "Canada",
+    iso2: "CA",
+    regionId: "north-america",
+    currency: "CAD",
+    fxToUsd: 0.73,
+    baseRevenueUsd: 1_100_000,
+    performanceBias: 0.01,
+    unitPriceUsd: 590,
+  },
+  {
+    id: "mx",
+    name: "Mexico",
+    iso2: "MX",
+    regionId: "north-america",
+    currency: "MXN",
+    fxToUsd: 0.058,
+    baseRevenueUsd: 700_000,
+    performanceBias: -0.01,
+    unitPriceUsd: 410,
+  },
+  {
+    id: "gb",
+    name: "United Kingdom",
+    iso2: "GB",
+    regionId: "europe",
+    currency: "GBP",
+    fxToUsd: 1.27,
+    baseRevenueUsd: 1_800_000,
+    performanceBias: 0,
+    unitPriceUsd: 620,
+  },
+  {
+    id: "de",
+    name: "Germany",
+    iso2: "DE",
+    regionId: "europe",
+    currency: "EUR",
+    fxToUsd: 1.08,
+    baseRevenueUsd: 2_100_000,
+    performanceBias: -0.1,
+    unitPriceUsd: 650,
+  },
+  {
+    id: "fr",
+    name: "France",
+    iso2: "FR",
+    regionId: "europe",
+    currency: "EUR",
+    fxToUsd: 1.08,
+    baseRevenueUsd: 1_600_000,
+    performanceBias: 0.01,
+    unitPriceUsd: 630,
+  },
+  {
+    id: "es",
+    name: "Spain",
+    iso2: "ES",
+    regionId: "europe",
+    currency: "EUR",
+    fxToUsd: 1.08,
+    baseRevenueUsd: 900_000,
+    performanceBias: -0.06,
+    unitPriceUsd: 560,
+  },
+  {
+    id: "jp",
+    name: "Japan",
+    iso2: "JP",
+    regionId: "apac",
+    currency: "JPY",
+    fxToUsd: 0.0067,
+    baseRevenueUsd: 2_400_000,
+    performanceBias: -0.05,
+    unitPriceUsd: 680,
+  },
+  {
+    id: "au",
+    name: "Australia",
+    iso2: "AU",
+    regionId: "apac",
+    currency: "AUD",
+    fxToUsd: 0.66,
+    baseRevenueUsd: 1_200_000,
+    performanceBias: 0.02,
+    unitPriceUsd: 610,
+  },
+  {
+    id: "in",
+    name: "India",
+    iso2: "IN",
+    regionId: "apac",
+    currency: "INR",
+    fxToUsd: 0.012,
+    baseRevenueUsd: 800_000,
+    performanceBias: 0.05,
+    unitPriceUsd: 360,
+  },
+  {
+    id: "br",
+    name: "Brazil",
+    iso2: "BR",
+    regionId: "latam",
+    currency: "BRL",
+    fxToUsd: 0.18,
+    baseRevenueUsd: 900_000,
+    performanceBias: -0.02,
+    unitPriceUsd: 430,
+  },
+  {
+    id: "ar",
+    name: "Argentina",
+    iso2: "AR",
+    regionId: "latam",
+    currency: "ARS",
+    fxToUsd: 0.0011,
+    baseRevenueUsd: 350_000,
+    performanceBias: -0.15,
+    unitPriceUsd: 390,
+  },
 ];
 
 const productSeeds: ProductSeed[] = [
   { id: "atlas", name: "Atlas Core", family: "Platform", weight: 0.32, unitPriceFactor: 1.15 },
-  { id: "beacon", name: "Beacon Cloud", family: "Infrastructure", weight: 0.24, unitPriceFactor: 1.05 },
+  {
+    id: "beacon",
+    name: "Beacon Cloud",
+    family: "Infrastructure",
+    weight: 0.24,
+    unitPriceFactor: 1.05,
+  },
   { id: "cascade", name: "Cascade Suite", family: "Workflow", weight: 0.18, unitPriceFactor: 0.95 },
-  { id: "drift", name: "Drift Analytics", family: "Intelligence", weight: 0.15, unitPriceFactor: 0.82 },
+  {
+    id: "drift",
+    name: "Drift Analytics",
+    family: "Intelligence",
+    weight: 0.15,
+    unitPriceFactor: 0.82,
+  },
   { id: "ember", name: "Ember Edge", family: "Infrastructure", weight: 0.11, unitPriceFactor: 0.7 },
 ];
 
@@ -159,7 +297,12 @@ function buildKpis(series: TimeSeriesPoint[], shareBase: number): KpiSnapshot {
       return {
         period: point.period,
         kind: attainment < 89 ? ("forecast-miss" as const) : ("revenue-drop" as const),
-        severity: miss > 14 || growth < -18 ? ("high" as const) : miss > 8 ? ("medium" as const) : ("low" as const),
+        severity:
+          miss > 14 || growth < -18
+            ? ("high" as const)
+            : miss > 8
+              ? ("medium" as const)
+              : ("low" as const),
         note:
           attainment < 89
             ? `Revenue landed ${miss.toFixed(0)}% below forecast, with prior-year growth at ${growth.toFixed(1)}%.`
@@ -224,8 +367,7 @@ export function buildMockDataset(): Dataset {
     const total = markets
       .filter((market) => market.regionId === region.id)
       .reduce(
-        (sum, market) =>
-          sum + market.series[market.series.length - 1].revenue * market.fxToUsd,
+        (sum, market) => sum + market.series[market.series.length - 1].revenue * market.fxToUsd,
         0,
       );
     return { regionId: region.id, total };

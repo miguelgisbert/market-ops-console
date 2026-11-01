@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { CircleAlert, Database, Send, Sparkles, Square } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import {
-  CircleAlert,
-  Database,
-  Send,
-  Sparkles,
-  Square,
-} from "lucide-react";
-import {
-  findFixture,
-  suggestedQuestions,
   type ChatFixture,
   type Confidence,
+  findFixture,
+  suggestedQuestions,
 } from "@/lib/chat/fixtures";
 import { cn } from "@/lib/utils";
 
@@ -26,10 +20,7 @@ type ChatMessage = {
   stopped?: boolean;
 };
 
-const confidenceStyles: Record<
-  Confidence,
-  { label: string; bars: number; className: string }
-> = {
+const confidenceStyles: Record<Confidence, { label: string; bars: number; className: string }> = {
   high: {
     label: "High confidence",
     bars: 3,
@@ -54,10 +45,12 @@ export function AssistantChat() {
   const [announcement, setAnnouncement] = useState("");
   const timerRef = useRef<number | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const lastMessageId = messages.at(-1)?.id;
 
   useEffect(() => {
+    if (!lastMessageId) return;
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [messages]);
+  }, [lastMessageId]);
 
   useEffect(() => {
     return () => {
@@ -73,9 +66,7 @@ export function AssistantChat() {
     }
     setMessages((current) =>
       current.map((message) =>
-        message.id === streamingId
-          ? { ...message, streaming: false, stopped: true }
-          : message,
+        message.id === streamingId ? { ...message, streaming: false, stopped: true } : message,
       ),
     );
     setStreamingId(null);
@@ -127,9 +118,7 @@ export function AssistantChat() {
         setStreamingId(null);
         setMessages((current) =>
           current.map((message) =>
-            message.id === assistantId
-              ? { ...message, streaming: false }
-              : message,
+            message.id === assistantId ? { ...message, streaming: false } : message,
           ),
         );
         setAnnouncement(
@@ -158,7 +147,7 @@ export function AssistantChat() {
         </span>
       </div>
 
-      <div
+      <section
         className="max-h-[58vh] min-h-[340px] overflow-y-auto px-4 py-5"
         aria-label="Conversation"
       >
@@ -174,8 +163,8 @@ export function AssistantChat() {
               Ask the portfolio a question
             </h3>
             <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">
-              The assistant can read market, product and period metrics. It will
-              say when a question falls outside the dataset.
+              The assistant can read market, product and period metrics. It will say when a question
+              falls outside the dataset.
             </p>
             <div className="mt-5 grid w-full gap-2 sm:grid-cols-2">
               {suggestedQuestions.map((question) => (
@@ -208,7 +197,7 @@ export function AssistantChat() {
           </ol>
         )}
         <div ref={endRef} />
-      </div>
+      </section>
 
       <div aria-live="polite" className="sr-only">
         {announcement}
@@ -269,10 +258,7 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
 
   return (
     <article
-      className={cn(
-        "border-l-2 pl-4",
-        isError ? "border-l-destructive" : "border-l-primary",
-      )}
+      className={cn("border-l-2 pl-4", isError ? "border-l-destructive" : "border-l-primary")}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium">Meridian assistant</span>
@@ -281,7 +267,12 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
           AI-generated
         </span>
         {!message.streaming && fixture.kind !== "abstention" ? (
-          <span className={cn("ml-auto inline-flex items-center gap-1.5 font-mono text-[10px]", confidence.className)}>
+          <span
+            className={cn(
+              "ml-auto inline-flex items-center gap-1.5 font-mono text-[10px]",
+              confidence.className,
+            )}
+          >
             <span aria-hidden="true" className="flex gap-0.5">
               {[1, 2, 3].map((bar) => (
                 <span
@@ -326,9 +317,7 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
       </div>
 
       {message.streaming ? (
-        <p className="mt-2 font-mono text-[10px] text-muted-foreground">
-          Generating response…
-        </p>
+        <p className="mt-2 font-mono text-[10px] text-muted-foreground">Generating response…</p>
       ) : null}
 
       {message.stopped ? (

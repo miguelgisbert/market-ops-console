@@ -83,11 +83,8 @@ const abstention: ChatFixture = {
   answer:
     "I can't answer that from this dataset. It contains actual, forecast and prior-year revenue through October 2026, but no forecast beyond that horizon and no forward pipeline.\n\nI can compare the latest actual against the latest plan, or show the 24-period trend for any market or product.",
   confidence: "low",
-  confidenceNote:
-    "The requested period is outside the dataset. I won't extrapolate a number.",
-  citations: [
-    { label: "Dataset horizon", kind: "period", note: "Ends Oct 2026" },
-  ],
+  confidenceNote: "The requested period is outside the dataset. I won't extrapolate a number.",
+  citations: [{ label: "Dataset horizon", kind: "period", note: "Ends Oct 2026" }],
 };
 
 const errorFixture: ChatFixture = {

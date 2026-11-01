@@ -1,5 +1,4 @@
-import type { ProductSummary } from "@/lib/data";
-import { formatCurrency, formatPercent } from "@/lib/format";
+import { StatusBadge } from "@/components/dashboard/status-badge";
 import {
   Table,
   TableBody,
@@ -8,7 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge } from "@/components/dashboard/status-badge";
+import type { ProductSummary } from "@/lib/data";
+import { formatCurrency, formatPercent } from "@/lib/format";
 
 export function ProductTable({ products }: { products: ProductSummary[] }) {
   return (
@@ -17,9 +17,7 @@ export function ProductTable({ products }: { products: ProductSummary[] }) {
         <h2 id="product-table-heading" className="text-sm font-semibold">
           Product contribution
         </h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          All markets combined, latest period.
-        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">All markets combined, latest period.</p>
       </div>
       <Table>
         <TableHeader>
@@ -37,17 +35,13 @@ export function ProductTable({ products }: { products: ProductSummary[] }) {
           {products.map((product) => (
             <TableRow key={product.id}>
               <TableCell className="pl-4 font-medium">{product.name}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {product.family}
-              </TableCell>
+              <TableCell className="text-muted-foreground">{product.family}</TableCell>
               <TableCell className="text-right font-mono tabular-nums">
                 {formatCurrency(product.revenueUsd, "USD", { compact: true })}
               </TableCell>
               <TableCell
                 className={`text-right font-mono tabular-nums ${
-                  product.growthPct >= 0
-                    ? "text-status-ontrack"
-                    : "text-status-offtrack"
+                  product.growthPct >= 0 ? "text-status-ontrack" : "text-status-offtrack"
                 }`}
               >
                 {formatPercent(product.growthPct, { signed: true })}

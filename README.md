@@ -30,6 +30,9 @@ npm run build       # production build
 - **Tailwind CSS v4** and **shadcn/ui** (Radix primitives, Nova preset) for
   accessible building blocks and CSS-variable design tokens.
 - **Zod** for the dataset contract and, later, form validation.
+- **Biome** for linting and formatting. The ESLint stack was removed because its
+  dev-only transitive `minimatch` advisories could not be fixed without unsafe
+  major downgrades; Biome keeps the dependency audit at zero.
 - **Bricolage Grotesque** for the interface and **IBM Plex Mono** for numbers,
   periods and data labels.
 - No charting library yet; charts are the next implementation step.

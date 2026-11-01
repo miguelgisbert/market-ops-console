@@ -51,9 +51,7 @@ export function MarketTable({ markets }: { markets: MarketSummary[] }) {
                   {market.iso2}
                 </span>
               </TableCell>
-              <TableCell className="text-muted-foreground">
-                {market.regionName}
-              </TableCell>
+              <TableCell className="text-muted-foreground">{market.regionName}</TableCell>
               <TableCell className="text-right">
                 <span className="block font-mono tabular-nums">
                   {formatCurrency(market.revenueUsd, "USD", { compact: true })}
@@ -66,9 +64,7 @@ export function MarketTable({ markets }: { markets: MarketSummary[] }) {
               </TableCell>
               <TableCell
                 className={`text-right font-mono tabular-nums ${
-                  market.growthPct >= 0
-                    ? "text-status-ontrack"
-                    : "text-status-offtrack"
+                  market.growthPct >= 0 ? "text-status-ontrack" : "text-status-offtrack"
                 }`}
               >
                 {formatPercent(market.growthPct, { signed: true })}

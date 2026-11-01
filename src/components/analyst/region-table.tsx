@@ -1,5 +1,3 @@
-import type { RegionSummary } from "@/lib/data";
-import { formatCurrency, formatPercent } from "@/lib/format";
 import {
   Table,
   TableBody,
@@ -8,6 +6,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { RegionSummary } from "@/lib/data";
+import { formatCurrency, formatPercent } from "@/lib/format";
 
 export function RegionTable({ regions }: { regions: RegionSummary[] }) {
   return (
@@ -39,9 +39,7 @@ export function RegionTable({ regions }: { regions: RegionSummary[] }) {
               </TableCell>
               <TableCell
                 className={`text-right font-mono tabular-nums ${
-                  region.growthPct >= 0
-                    ? "text-status-ontrack"
-                    : "text-status-offtrack"
+                  region.growthPct >= 0 ? "text-status-ontrack" : "text-status-offtrack"
                 }`}
               >
                 {formatPercent(region.growthPct, { signed: true })}

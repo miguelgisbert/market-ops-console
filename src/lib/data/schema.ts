@@ -3,12 +3,7 @@ import { z } from "zod";
 export const marketStatusSchema = z.enum(["on-track", "at-risk", "off-track"]);
 export type MarketStatus = z.infer<typeof marketStatusSchema>;
 
-export const anomalyKindSchema = z.enum([
-  "revenue-drop",
-  "forecast-miss",
-  "share-loss",
-  "spike",
-]);
+export const anomalyKindSchema = z.enum(["revenue-drop", "forecast-miss", "share-loss", "spike"]);
 export type AnomalyKind = z.infer<typeof anomalyKindSchema>;
 
 export const anomalySchema = z.object({

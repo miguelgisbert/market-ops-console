@@ -1,9 +1,4 @@
-import type { MarketSummary } from "@/lib/data";
-import {
-  formatCurrency,
-  formatPercent,
-  formatPeriodLabel,
-} from "@/lib/format";
+import { StatusBadge } from "@/components/dashboard/status-badge";
 import {
   Table,
   TableBody,
@@ -13,7 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge } from "@/components/dashboard/status-badge";
+import type { MarketSummary } from "@/lib/data";
+import { formatCurrency, formatPercent, formatPeriodLabel } from "@/lib/format";
 
 export function SelectedMarketPanel({ market }: { market: MarketSummary }) {
   const recent = market.series.slice(-8);
@@ -52,34 +48,26 @@ export function SelectedMarketPanel({ market }: { market: MarketSummary }) {
           <dt className="data-label">Growth</dt>
           <dd
             className={`mt-1 font-mono text-lg font-medium tabular-nums ${
-              market.growthPct >= 0
-                ? "text-status-ontrack"
-                : "text-status-offtrack"
+              market.growthPct >= 0 ? "text-status-ontrack" : "text-status-offtrack"
             }`}
           >
             {formatPercent(market.growthPct, { signed: true })}
           </dd>
-          <dd className="font-mono text-[10px] text-muted-foreground">
-            vs prior year
-          </dd>
+          <dd className="font-mono text-[10px] text-muted-foreground">vs prior year</dd>
         </div>
         <div className="border-b px-4 py-3 sm:border-b-0">
           <dt className="data-label">Regional share</dt>
           <dd className="mt-1 font-mono text-lg font-medium tabular-nums">
             {formatPercent(market.marketSharePct)}
           </dd>
-          <dd className="font-mono text-[10px] text-muted-foreground">
-            of {market.regionName}
-          </dd>
+          <dd className="font-mono text-[10px] text-muted-foreground">of {market.regionName}</dd>
         </div>
         <div className="px-4 py-3">
           <dt className="data-label">Attainment</dt>
           <dd className="mt-1 font-mono text-lg font-medium tabular-nums">
             {formatPercent(market.forecastAttainmentPct)}
           </dd>
-          <dd className="font-mono text-[10px] text-muted-foreground">
-            actual vs forecast
-          </dd>
+          <dd className="font-mono text-[10px] text-muted-foreground">actual vs forecast</dd>
         </div>
       </dl>
 
@@ -100,8 +88,7 @@ export function SelectedMarketPanel({ market }: { market: MarketSummary }) {
           </TableHeader>
           <TableBody>
             {recent.map((point) => {
-              const variance =
-                ((point.revenue - point.forecast) / point.forecast) * 100;
+              const variance = ((point.revenue - point.forecast) / point.forecast) * 100;
               return (
                 <TableRow key={point.period}>
                   <TableCell className="py-1.5 pl-0 font-mono text-xs">
@@ -124,9 +111,7 @@ export function SelectedMarketPanel({ market }: { market: MarketSummary }) {
                   </TableCell>
                   <TableCell
                     className={`py-1.5 pr-0 text-right font-mono text-xs tabular-nums ${
-                      variance >= 0
-                        ? "text-status-ontrack"
-                        : "text-status-offtrack"
+                      variance >= 0 ? "text-status-ontrack" : "text-status-offtrack"
                     }`}
                   >
                     {formatPercent(variance, { signed: true })}

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { AppNav } from "./app-nav";
 import { getDataset } from "@/lib/data";
 import { formatPeriodLabel } from "@/lib/format";
+import { AppNav } from "./app-nav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const dataset = getDataset();
@@ -19,9 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               M
             </span>
             <span className="leading-none">
-              <span className="block text-[15px] font-semibold tracking-[-0.01em]">
-                Meridian
-              </span>
+              <span className="block text-[15px] font-semibold tracking-[-0.01em]">Meridian</span>
               <span className="mt-1 block font-mono text-[10px] text-muted-foreground">
                 Market operations
               </span>
@@ -34,16 +32,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden items-center gap-1.5 border px-2 py-1 font-mono text-[10px] text-muted-foreground md:inline-flex">
-              <span
-                aria-hidden="true"
-                className="size-1.5 rounded-full bg-status-ontrack"
-              />
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-status-ontrack" />
               {dataset.metadata.source === "synthetic" ? "Demo data" : "Starter pack"}
             </span>
             <span className="border px-2 py-1 font-mono text-[10px] text-foreground">
               {formatPeriodLabel(latestPeriod)}
             </span>
             <span
+              role="img"
               aria-label="Signed in as Miguel"
               className="grid size-8 place-items-center rounded-full border bg-card font-mono text-[10px] font-medium"
             >

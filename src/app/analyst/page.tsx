@@ -1,11 +1,11 @@
-import { Suspense } from "react";
-import Link from "next/link";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
-import { KpiBand, type KpiMetric } from "@/components/dashboard/kpi-band";
-import { MarketTable } from "@/components/dashboard/market-table";
+import Link from "next/link";
+import { Suspense } from "react";
 import { ProductTable } from "@/components/analyst/product-table";
 import { RegionTable } from "@/components/analyst/region-table";
 import { SelectedMarketPanel } from "@/components/analyst/selected-market-panel";
+import { KpiBand, type KpiMetric } from "@/components/dashboard/kpi-band";
+import { MarketTable } from "@/components/dashboard/market-table";
 import {
   getDataset,
   getMarketSummaries,
@@ -38,9 +38,7 @@ async function AnalystContent({
 
   const dataset = getDataset();
   const markets = getMarketSummaries(dataset);
-  const selectedMarket = marketId
-    ? markets.find((market) => market.id === marketId)
-    : undefined;
+  const selectedMarket = marketId ? markets.find((market) => market.id === marketId) : undefined;
   const portfolio = getPortfolioSummary(dataset);
   const regions = getRegionSummaries(dataset);
   const products = getProductSummaries(dataset);
@@ -69,8 +67,7 @@ async function AnalystContent({
           label: "Attainment",
           value: formatPercent(selectedMarket.forecastAttainmentPct),
           detail: "of forecast",
-          tone:
-            selectedMarket.forecastAttainmentPct >= 98 ? "positive" : "warning",
+          tone: selectedMarket.forecastAttainmentPct >= 98 ? "positive" : "warning",
         },
       ]
     : [
@@ -149,7 +146,12 @@ async function AnalystContent({
 
 function AnalystFallback() {
   return (
-    <div className="space-y-7" aria-busy="true" aria-label="Loading analyst workspace">
+    <div
+      className="space-y-7"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading analyst workspace"
+    >
       <header className="border-b pb-5">
         <div className="h-3 w-48 bg-muted" />
         <div className="mt-3 h-9 w-80 bg-muted" />
