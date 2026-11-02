@@ -246,6 +246,8 @@ Targeted at WCAG 2.1 AA:
 - Reduced-motion support for the streaming caret; chart animations are disabled.
 - Currency, percentages and periods use shared formatters; dates are pinned to UTC.
 - No colour-only status signals; status text is always present.
+- **Would add with more time:** automated axe checks in CI, a screen-reader pass on
+  the full assistant flow, and a forced-colors mode review.
 
 ## Testing
 
@@ -274,9 +276,10 @@ for every chart, axe/Lighthouse CI budgets, and unit tests for Recharts internal
   no chart animation; 24-period tables are scrollable rather than virtualised; map is
   pre-generated so no topology library ships to the browser. The heaviest client
   chunks are Recharts and the map path data.
-- **Observability:** not wired to a vendor. Next steps are `useReportWebVitals` or
-  `@vercel/speed-insights` for Core Web Vitals, plus Sentry (or equivalent) for client
-  errors. The error boundary is already in place at `src/app/error.tsx`.
+- **Observability:** Vercel Speed Insights is mounted in the root layout and
+  collects web-vitals on the live deployment. The error boundary at
+  `src/app/error.tsx` captures render failures; the next step is an error-tracking
+  vendor such as Sentry.
 - **Resilience and hardening:** Zod validation at the data and SSE boundaries;
   explicit error/abstain states; AbortController cleanup; no HTML injection; strict
   TypeScript; deterministic formatters to avoid hydration drift.
@@ -319,12 +322,13 @@ and test generation, with the following working rules:
 - Never ship unreviewed generated code; do not use AI to write the reasoning in this
   README wholesale.
 
-## Known limitations / next
+## Known limitations / what I'd do differently with more time
 
-- Assistant answers are canned fixtures, not real model output (by design).
-- Alert persistence is localStorage; there is no real alert service.
-- Dashboard KPIs use the canonical latest-period snapshot for share; historical
-  periods derive share from the fact table.
+- Replace canned fixture answers with the real model once the backend exists.
+- Move alert persistence from localStorage to a real service with retries.
+- Use the canonical share snapshot consistently or recompute a documented share
+  definition for every period.
 - Add an accessible scatter/bubble view and a region-vs-region radar mode.
-- Add web-vitals/error tracking, Lighthouse budgets and a full axe pass.
+- Add Lighthouse bundle budgets, error tracking and a full axe pass.
 - Add a command palette and a context-aware assistant once the URL scope is stable.
+- Add the optional live mode and a virtualised analyst table.
