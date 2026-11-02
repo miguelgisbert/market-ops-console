@@ -3,22 +3,34 @@
 import { CircleAlert, Database, Send, Sparkles, Square } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { type CitationLookup, type ResolvedCitation, resolveCitation } from "@/lib/chat/citations";
 import {
-  type ChatFixture,
+  type AnswerKind,
+  type Citation,
   type Confidence,
-  findFixture,
-  suggestedQuestions,
-} from "@/lib/chat/fixtures";
+  chatEventSchema,
+} from "@/lib/chat/schema";
 import { cn } from "@/lib/utils";
 
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  fixture?: ChatFixture;
-  streaming?: boolean;
-  stopped?: boolean;
+  status: "streaming" | "complete" | "stopped" | "error";
+  citations?: Citation[];
+  confidence?: Confidence;
+  kind?: AnswerKind;
+  error?: string;
 };
+
+const suggestedQuestions = [
+  "Which markets are at risk this quarter, and why?",
+  "Why did Germany's revenue dip?",
+  "Compare APAC and Europe on growth and forecast attainment",
+  "What's driving the portfolio's forecast miss?",
+  "Give me a full portfolio summary",
+  "What will sales be next year?",
+];
 
 const confidenceStyles: Record<Confidence, { label: string; bars: number; className: string }> = {
   high: {
@@ -38,12 +50,25 @@ const confidenceStyles: Record<Confidence, { label: string; bars: number; classN
   },
 };
 
-export function AssistantChat() {
+function confidenceNote(confidence: Confidence, kind?: AnswerKind): string {
+  if (kind === "abstain") {
+    return "The requested period or fact is outside the dataset. No number was extrapolated.";
+  }
+  if (confidence === "high") {
+    return "Based on complete figures in the canonical dataset, with no causal claim added.";
+  }
+  if (confidence === "medium") {
+    return "The underlying figures are complete; the answer includes interpretation or judgement.";
+  }
+  return "Treat this as directional. The dataset may not support a precise answer.";
+}
+
+export function AssistantChat({ lookup }: { lookup: CitationLookup }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
-  const timerRef = useRef<number | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const lastMessageId = messages.at(-1)?.id;
 
@@ -53,43 +78,39 @@ export function AssistantChat() {
   }, [lastMessageId]);
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current !== null) window.clearInterval(timerRef.current);
-    };
+    return () => abortRef.current?.abort();
   }, []);
+
+  function patchMessage(id: string, patch: Partial<ChatMessage>) {
+    setMessages((current) =>
+      current.map((message) => (message.id === id ? { ...message, ...patch } : message)),
+    );
+  }
 
   function stopStream() {
     if (streamingId === null) return;
-    if (timerRef.current !== null) {
-      window.clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setMessages((current) =>
-      current.map((message) =>
-        message.id === streamingId ? { ...message, streaming: false, stopped: true } : message,
-      ),
-    );
+    abortRef.current?.abort();
+    patchMessage(streamingId, { status: "stopped" });
     setStreamingId(null);
     setAnnouncement("Generation stopped.");
   }
 
-  function ask(question: string) {
+  async function ask(question: string) {
     const trimmed = question.trim();
     if (!trimmed || streamingId !== null) return;
 
-    const fixture = findFixture(trimmed);
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
       content: trimmed,
+      status: "complete",
     };
     const assistantId = crypto.randomUUID();
     const assistantMessage: ChatMessage = {
       id: assistantId,
       role: "assistant",
       content: "",
-      fixture,
-      streaming: true,
+      status: "streaming",
     };
 
     setMessages((current) => [...current, userMessage, assistantMessage]);
@@ -97,37 +118,126 @@ export function AssistantChat() {
     setStreamingId(assistantId);
     setAnnouncement("Assistant is generating a response.");
 
-    const tokens = fixture.answer.split(/(\s+)/);
-    let index = 0;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let sawDone = false;
+    let sawError = false;
 
-    timerRef.current = window.setInterval(() => {
-      index = Math.min(tokens.length, index + 2);
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === assistantId
-            ? { ...message, content: tokens.slice(0, index).join("") }
-            : message,
-        ),
-      );
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+        signal: controller.signal,
+      });
 
-      if (index >= tokens.length) {
-        if (timerRef.current !== null) {
-          window.clearInterval(timerRef.current);
-          timerRef.current = null;
+      if (!response.ok || !response.body) {
+        let message = "The assistant request failed. Try again.";
+        try {
+          const payload: unknown = await response.json();
+          if (
+            typeof payload === "object" &&
+            payload !== null &&
+            "error" in payload &&
+            typeof payload.error === "string"
+          ) {
+            message = payload.error;
+          }
+        } catch {
+          message = "The assistant request failed. Try again.";
         }
-        setStreamingId(null);
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === assistantId ? { ...message, streaming: false } : message,
-          ),
-        );
+        throw new Error(message);
+      }
+
+      const reader = response.body.getReader();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const rawEvent = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const dataLine = rawEvent.split("\n").find((line) => line.startsWith("data: "));
+
+          if (dataLine) {
+            let payload: unknown;
+            try {
+              payload = JSON.parse(dataLine.slice(6));
+            } catch {
+              payload = null;
+            }
+            const parsed = chatEventSchema.safeParse(payload);
+            if (parsed.success) {
+              if (parsed.data.type === "token") {
+                const token = parsed.data.value;
+                setMessages((current) =>
+                  current.map((message) =>
+                    message.id === assistantId
+                      ? { ...message, content: message.content + token }
+                      : message,
+                  ),
+                );
+              } else if (parsed.data.type === "done") {
+                sawDone = true;
+                patchMessage(assistantId, {
+                  status: "complete",
+                  citations: parsed.data.citations,
+                  confidence: parsed.data.confidence,
+                  kind: parsed.data.kind,
+                });
+              } else {
+                sawError = true;
+                patchMessage(assistantId, {
+                  status: "error",
+                  error: parsed.data.message,
+                  kind: "error",
+                });
+              }
+            }
+          }
+
+          boundary = buffer.indexOf("\n\n");
+        }
+      }
+
+      if (!controller.signal.aborted && !sawDone && !sawError) {
+        patchMessage(assistantId, {
+          status: "error",
+          error: "The stream ended before the final evidence event arrived.",
+          kind: "error",
+        });
+      }
+
+      if (!controller.signal.aborted) {
         setAnnouncement(
-          fixture.kind === "error"
+          sawError
             ? "Assistant response failed."
             : "Assistant response complete. Citations and confidence are available.",
         );
       }
-    }, 24);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        patchMessage(assistantId, { status: "stopped" });
+        setAnnouncement("Generation stopped.");
+      } else {
+        patchMessage(assistantId, {
+          status: "error",
+          error: error instanceof Error ? error.message : "The assistant request failed.",
+          kind: "error",
+        });
+        setAnnouncement("Assistant response failed.");
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        abortRef.current = null;
+        setStreamingId(null);
+      }
+    }
   }
 
   return (
@@ -138,7 +248,7 @@ export function AssistantChat() {
             Portfolio assistant
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Answers cite the markets, products and periods used.
+            Streamed by the provided fixture endpoint. Every answer cites its evidence.
           </p>
         </div>
         <span className="inline-flex items-center gap-1.5 border border-primary/25 bg-primary/5 px-2 py-1 font-mono text-[10px] text-primary">
@@ -148,7 +258,7 @@ export function AssistantChat() {
       </div>
 
       <section
-        className="max-h-[58vh] min-h-[340px] overflow-y-auto px-4 py-5"
+        className="min-h-[360px] max-h-[58vh] overflow-y-auto px-4 py-5"
         aria-label="Conversation"
       >
         {messages.length === 0 ? (
@@ -163,8 +273,8 @@ export function AssistantChat() {
               Ask the portfolio a question
             </h3>
             <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">
-              The assistant can read market, product and period metrics. It will say when a question
-              falls outside the dataset.
+              The assistant reads the starter-pack fixtures. It will say when a question falls
+              outside the dataset.
             </p>
             <div className="mt-5 grid w-full gap-2 sm:grid-cols-2">
               {suggestedQuestions.map((question) => (
@@ -190,7 +300,7 @@ export function AssistantChat() {
                 </li>
               ) : (
                 <li key={message.id}>
-                  <AssistantMessage message={message} />
+                  <AssistantMessage message={message} lookup={lookup} />
                 </li>
               ),
             )}
@@ -207,7 +317,7 @@ export function AssistantChat() {
         className="border-t bg-background/60 px-3 py-3"
         onSubmit={(event) => {
           event.preventDefault();
-          ask(input);
+          void ask(input);
         }}
       >
         <div className="flex items-center gap-2">
@@ -242,19 +352,18 @@ export function AssistantChat() {
           )}
         </div>
         <p className="mt-2 font-mono text-[10px] text-muted-foreground">
-          Demo fixtures · Replace with the provided SSE contract when available
+          POST /api/chat · Server-Sent Events · fixture-backed mock
         </p>
       </form>
     </section>
   );
 }
 
-function AssistantMessage({ message }: { message: ChatMessage }) {
-  const fixture = message.fixture;
-  if (!fixture) return null;
-
-  const confidence = confidenceStyles[fixture.confidence];
-  const isError = fixture.kind === "error";
+function AssistantMessage({ message, lookup }: { message: ChatMessage; lookup: CitationLookup }) {
+  const confidence = message.confidence ? confidenceStyles[message.confidence] : undefined;
+  const citations: ResolvedCitation[] =
+    message.citations?.map((citation) => resolveCitation(citation, lookup)) ?? [];
+  const isError = message.status === "error";
 
   return (
     <article
@@ -262,11 +371,18 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium">Meridian assistant</span>
-        <span className="inline-flex items-center gap-1 border border-primary/25 bg-primary/5 px-1.5 py-0.5 font-mono text-[10px] text-primary">
-          <Sparkles aria-hidden="true" className="size-2.5" />
-          AI-generated
-        </span>
-        {!message.streaming && fixture.kind !== "abstention" ? (
+        {isError ? (
+          <span className="inline-flex items-center gap-1 border border-destructive/35 bg-destructive/5 px-1.5 py-0.5 font-mono text-[10px] text-destructive">
+            <CircleAlert aria-hidden="true" className="size-2.5" />
+            Assistant error
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 border border-primary/25 bg-primary/5 px-1.5 py-0.5 font-mono text-[10px] text-primary">
+            <Sparkles aria-hidden="true" className="size-2.5" />
+            AI-generated
+          </span>
+        )}
+        {message.status === "complete" && confidence && message.kind !== "abstain" ? (
           <span
             className={cn(
               "ml-auto inline-flex items-center gap-1.5 font-mono text-[10px]",
@@ -289,26 +405,26 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
         ) : null}
       </div>
 
-      {fixture.kind === "abstention" && !message.streaming ? (
+      {message.kind === "abstain" && message.status === "complete" ? (
         <p className="mt-3 flex items-center gap-1.5 border border-status-atrisk/35 bg-status-atrisk/8 px-2 py-1.5 text-[11px] text-status-atrisk">
           <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
           Outside the dataset. No answer was invented.
         </p>
       ) : null}
 
-      {isError && !message.streaming ? (
+      {isError ? (
         <p
           role="alert"
           className="mt-3 flex items-center gap-1.5 border border-destructive/35 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive"
         >
           <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-          The response stream failed. No data conclusion is available.
+          {message.error ?? "The response stream failed."}
         </p>
       ) : null}
 
       <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
         {message.content}
-        {message.streaming ? (
+        {message.status === "streaming" ? (
           <span
             aria-hidden="true"
             className="ml-1 inline-block h-3.5 w-1.5 animate-pulse bg-primary align-middle motion-reduce:animate-none"
@@ -316,49 +432,52 @@ function AssistantMessage({ message }: { message: ChatMessage }) {
         ) : null}
       </div>
 
-      {message.streaming ? (
+      {message.status === "streaming" ? (
         <p className="mt-2 font-mono text-[10px] text-muted-foreground">Generating response…</p>
       ) : null}
 
-      {message.stopped ? (
+      {message.status === "stopped" ? (
         <p className="mt-2 font-mono text-[10px] text-muted-foreground">
           Generation stopped by user.
         </p>
       ) : null}
 
-      {!message.streaming && fixture.citations.length > 0 ? (
+      {message.status === "complete" && message.confidence ? (
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+          {confidenceNote(message.confidence, message.kind)}
+        </p>
+      ) : null}
+
+      {message.status === "complete" && citations.length > 0 ? (
         <div className="mt-4 border-t pt-3">
           <p className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
             <Database aria-hidden="true" className="size-3" />
             Evidence from source data
           </p>
           <ul className="mt-2 flex flex-wrap gap-1.5">
-            {fixture.citations.map((citation) => (
-              <li key={`${citation.kind}-${citation.label}`}>
+            {citations.map((citation) => (
+              <li key={citation.key}>
                 {citation.href ? (
                   <Link
                     href={citation.href}
                     className="inline-flex items-center gap-1 border bg-background px-1.5 py-1 font-mono text-[10px] text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {citation.label}
-                    {citation.note ? (
-                      <span className="text-muted-foreground">· {citation.note}</span>
+                    {citation.secondary ? (
+                      <span className="text-muted-foreground">· {citation.secondary}</span>
                     ) : null}
                   </Link>
                 ) : (
                   <span className="inline-flex items-center gap-1 border bg-background px-1.5 py-1 font-mono text-[10px] text-foreground">
                     {citation.label}
-                    {citation.note ? (
-                      <span className="text-muted-foreground">· {citation.note}</span>
+                    {citation.secondary ? (
+                      <span className="text-muted-foreground">· {citation.secondary}</span>
                     ) : null}
                   </span>
                 )}
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            {fixture.confidenceNote}
-          </p>
         </div>
       ) : null}
     </article>

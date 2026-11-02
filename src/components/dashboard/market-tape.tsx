@@ -4,15 +4,15 @@ import { formatPercent, statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const statusRail = {
-  "on-track": "bg-status-ontrack",
-  "at-risk": "bg-status-atrisk",
-  "off-track": "bg-status-offtrack",
+  on_track: "bg-status-ontrack",
+  at_risk: "bg-status-atrisk",
+  off_track: "bg-status-offtrack",
 } as const;
 
 const statusText = {
-  "on-track": "text-status-ontrack",
-  "at-risk": "text-status-atrisk",
-  "off-track": "text-status-offtrack",
+  on_track: "text-status-ontrack",
+  at_risk: "text-status-atrisk",
+  off_track: "text-status-offtrack",
 } as const;
 
 export function MarketTape({ markets }: { markets: MarketSummary[] }) {
@@ -29,7 +29,7 @@ export function MarketTape({ markets }: { markets: MarketSummary[] }) {
         </div>
         <p className="data-label">Attainment vs forecast</p>
       </div>
-      <ol className="grid grid-cols-2 border-l border-t sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      <ol className="grid grid-cols-2 border-l border-t sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
         {markets.map((market) => (
           <li key={market.id} className="border-r border-b bg-card">
             <Link

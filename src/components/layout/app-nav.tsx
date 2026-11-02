@@ -8,6 +8,7 @@ const items = [
   { href: "/", label: "Overview" },
   { href: "/analyst", label: "Analyst" },
   { href: "/assistant", label: "Assistant" },
+  { href: "/alerts", label: "Alerts" },
 ];
 
 export function AppNav() {

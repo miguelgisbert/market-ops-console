@@ -26,7 +26,7 @@ export function AttentionList({ items }: { items: AttentionItem[] }) {
           </span>
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Latest anomalies, highest severity first.
+          Markets not on track, highest risk first.
         </p>
       </div>
       {items.length === 0 ? (

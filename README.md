@@ -1,15 +1,15 @@
 # Meridian — Market operations console
 
-Front-end for a commercial operations team that reads portfolio performance and
-asks questions about it. Built for the Front-End Engineer take-home assignment.
+A front-end for a commercial operations team that reads portfolio performance and
+asks questions about it. Built for the Front-End Engineer take-home assignment
+using the provided starter pack.
 
-**Status:** foundation scaffold. The starter pack (`data.json`, `fixtures.json`,
-`CONTRACT.md`, reference `/api/chat`) has not been received yet, so the app runs
-on a deterministic synthetic dataset and local chat fixtures. The types,
-selectors and UI are structured so the real fixtures and SSE contract can replace
-them without changing the surfaces.
+**Live:** [https://meridian-market-ops.vercel.app](https://meridian-market-ops.vercel.app)
 
-## Run locally
+**Stack:** Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS v4,
+shadcn/ui, Zod, Recharts, Biome, Vitest and Playwright.
+
+## Quick setup
 
 ```bash
 npm install
@@ -19,132 +19,312 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
+npm run lint        # Biome lint + format check
 npm run typecheck   # next typegen + tsc --noEmit
-npm run lint        # eslint
+npm test            # Vitest unit/component tests
+npm run test:e2e    # Playwright happy paths (Chrome)
 npm run build       # production build
+npm audit           # 0 vulnerabilities
 ```
 
-## Stack
+## What it does
 
-- **Next.js 16** with the App Router, React 19 and TypeScript in strict mode.
-- **Tailwind CSS v4** and **shadcn/ui** (Radix primitives, Nova preset) for
-  accessible building blocks and CSS-variable design tokens.
-- **Zod** for the dataset contract and, later, form validation.
-- **Biome** for linting and formatting. The ESLint stack was removed because its
-  dev-only transitive `minimatch` advisories could not be fixed without unsafe
-  major downgrades; Biome keeps the dependency audit at zero.
-- **Bricolage Grotesque** for the interface and **IBM Plex Mono** for numbers,
-  periods and data labels.
-- No charting library yet; charts are the next implementation step.
+### Executive overview (`/`)
 
-## What exists today
-
-### Overview (`/`)
-
-- A dense market tape with every market's status, growth and forecast attainment.
-- Portfolio KPIs: revenue, growth, attainment and markets at risk.
-- Market performance table with reporting-currency and local-currency revenue.
-- "Needs attention" panel covering every market that is not on track, using the
-  latest anomaly when one exists.
+- Market tape ordered by risk, with status, growth and forecast attainment.
+- Portfolio totals, trend against forecast, top movers and markets at risk.
+- Dense market table with revenue, growth, share, attainment and status.
+- "Needs attention" panel driven by the dataset's statuses and anomaly markers.
 
 ### Analyst workspace (`/analyst`)
 
-- Regional performance and product contribution tables.
-- Full market table with status, growth, share and attainment.
-- URL-driven drill-down: `/analyst?market=de` selects Germany, changes the KPI
-  band and shows recent actual, forecast and prior-year periods as an accessible
-  table. The selection survives reload and browser history.
-- A Suspense fallback keeps the route partially prerendered instead of blocking
-  the whole navigation.
+- Drill-down through portfolio → region → market → product.
+- Choropleth map coloured by growth, attainment, share or revenue, with click-to-drill
+  and automatic zoom to the selected region.
+- Radar comparison of up to five markets across revenue index, growth, share and
+  attainment.
+- 24-period actual vs forecast vs prior-year time series for the selected scope.
+- Forecast-variance heat map (markets × periods), keyboard-navigable with roving
+  tab focus; selecting a cell updates the rest of the dashboard.
+- Region, product, period and comparison controls, all reflected in the URL.
+- Accessible data tables behind every visualisation.
 
 ### Assistant (`/assistant`)
 
-- Streaming-style response simulation with a visible in-progress state and a stop
-  control.
-- AI-generated content is visually and structurally separated from source data.
-- Citations for markets, products and periods, each with a link back to the
-  relevant analyst view when available.
-- Confidence cues (high / medium / low) with an honest explanation.
-- Abstention state for questions outside the dataset and an error state for a
-  failed stream.
-- Suggested questions, keyboard-accessible composer and screen-reader status
-  announcements.
+- Real `POST /api/chat` SSE transport implementing the starter-pack contract.
+- Token-by-token rendering, in-progress state, stop via `AbortController`.
+- Citations resolved against `data.json` and linked to the analyst view.
+- Confidence cues, explicit abstention, error state and long-response handling.
+- AI-generated narrative is visually and structurally separate from authoritative
+  source data.
+
+### Alerts (`/alerts`)
+
+- Non-trivial threshold configurator for growth or forecast attainment.
+- Zod schema validation with inline field errors.
+- Optimistic save, simulated failure mode, rollback and localStorage persistence.
+- Rule list with active/paused state and delete.
+
+## Screenshots
+
+### Portfolio overview
+
+![Portfolio overview](docs/screenshots/overview.png)
+
+### Analyst workspace
+
+![Analyst map and radar](docs/screenshots/analyst.png)
+
+### Time series and heat map
+
+![Analyst time series and heat map](docs/screenshots/analyst-heatmap.png)
+
+### Assistant with citations
+
+![Assistant with citations](docs/screenshots/assistant.png)
+
+### Alert configurator
+
+![Alert configurator](docs/screenshots/alerts.png)
+
+### Mobile
+
+![Mobile overview](docs/screenshots/overview-mobile.png)
+
+## Starter pack alignment
+
+The canonical files from the starter pack are copied to `src/data/`:
+
+- `data.json`: 13 markets, 4 regions, 5 products and 1,560 rows (market × product ×
+  24 months). Region and portfolio totals are derived from the fact table.
+- `fixtures.json`: served by `src/app/api/chat/route.ts`; first keyword match wins,
+  with the provided default fallback.
+
+The provided data and streaming contract are retained at
+[`docs/starter-pack-contract.md`](docs/starter-pack-contract.md). The synthetic
+dashboard data is no longer used. `src/lib/data/schema.ts` validates the JSON at
+module load, including every series row's market, product and period reference.
 
 ## Architecture
 
 ```text
-src/
-  app/
-    page.tsx                 executive overview
-    analyst/page.tsx         analyst view + URL drill-down
-    assistant/page.tsx       assistant surface
-    layout.tsx               fonts, metadata, tooltip provider, shell
-  components/
-    layout/                  top bar, navigation, page shell
-    dashboard/               tape, KPI band, market table, status badge
-    analyst/                 regional/product tables, selected market panel
-    assistant/               chat surface and fixture-based streaming
-    ui/                      shadcn primitives
-  lib/
-    data/
-      schema.ts              Zod contract and inferred TypeScript types
-      mock.ts                deterministic synthetic dataset (placeholder)
-      selectors.ts           portfolio, region, market and product derivations
-    chat/fixtures.ts         local question → answer fixtures
-    format.ts                Intl currency, percent, compact number and date formatting
+Browser
+├── Server Components
+│   ├── overview page          reads DataIndex, renders static dashboard
+│   ├── analyst page           awaits searchParams, renders scope + charts
+│   └── app shell              dataset metadata, navigation
+├── Client islands
+│   ├── charts                 Recharts radar/line, custom SVG map/heat map
+│   ├── scope controls         URL updates through the App Router
+│   ├── assistant              fetch + SSE parser + AbortController
+│   └── alert configurator     Zod form, optimistic state, rollback
+└── POST /api/chat
+    └── fixtures.json lookup → token SSE events → done event
 ```
 
-### Data flow and state
+```text
+src/
+  app/
+    page.tsx                  executive overview
+    analyst/page.tsx          analyst workspace + Suspense boundary
+    assistant/page.tsx        chat surface + trust model
+    alerts/page.tsx           threshold configurator
+    api/chat/route.ts         SSE fixture endpoint
+    error.tsx / not-found.tsx resilience states
+  components/
+    charts/                   map, radar, time series, heat map, chart panel
+    dashboard/                tape, KPI band, tables, trend, scope controls
+    analyst/                  region/product tables, selected market panel
+    assistant/                streaming chat
+    alerts/                   alert form and rule list
+    ui/                       shadcn primitives
+  lib/
+    data/
+      schema.ts               Zod data contract and inferred types
+      build.ts                immutable DataIndex (aggregations precomputed)
+      selectors.ts            portfolio, region, market, product, radar, heatmap
+    chat/
+      schema.ts               fixtures + SSE event contract
+      citations.ts            citation lookup and URL resolution
+    alerts/schema.ts          form schema and threshold predicates
+    dashboard/config.ts       map metric config
+    format.ts                 deterministic currency/percent/date formatting
+  data/
+    data.json                 canonical dataset
+    fixtures.json             canonical assistant fixtures
+    world-map.json            generated SVG paths and country bounds
+scripts/generate-world-map.mjs
+```
 
-- Dataset and selectors are server-side and synchronous for now. The dataset
-  module is the seam for the real `data.json`.
-- The overview and analyst views are Server Components. The URL is the source of
-  truth for drill-down, so views are shareable and back/forward works.
-- The assistant is a Client Component because streaming, stop and composer state
-  are interactive. It currently simulates tokens from local fixtures; the
-  intended replacement is a typed SSE parser feeding the same message model.
-- Server state is not duplicated in the client. When the real data arrives,
-  fetch/cache will live behind the data module (TanStack Query or Next caching,
-  decided once the starter pack is known).
+### Data flow
 
-### Design system
+`data.json` → Zod validation → `createDataIndex` → selectors → Server Components →
+props to client visualisations. The index is built once at module load. Every series
+is pre-aggregated by market, region, product, market×product and region×product so
+dashboard renders do not repeatedly scan the fact table.
 
-- CSS variables in `src/app/globals.css` define the palette, status colours,
-  chart slots and radii; shadcn components consume them.
-- Status is never encoded by colour alone: every badge, tape tile and attention
-  item includes a label and icon.
-- Numbers use tabular mono figures; local-currency values sit beneath the
-  reporting-currency value in tables.
-- The visual direction is an operations tape rather than a generic card grid:
-  hairline structure, a single signal band and dense tables.
+### State boundaries
 
-## Placeholder data
+- **Server/data state:** the immutable validated dataset and precomputed index.
+- **URL state:** current region, market, product, period, map metric and radar
+  comparison. This is the source of truth for the dashboard, which makes views
+  shareable and keeps back/forward working.
+- **Client state:** chart focus/roving tab index, chat stream and abort controller,
+  alert form fields and optimistic rule state. No server data is duplicated into
+  client state.
 
-`src/lib/data/mock.ts` generates 12 markets, 4 regions, 5 products and 24 monthly
-periods with a seeded PRNG. It exists to unblock the UI and typing work. It is
-deliberately marked as `source: "synthetic"` in the dataset metadata and in the
-header. It will be removed or replaced by the provided dataset.
+## Approach and decisions
 
-## Next steps
+### Framework and styling
 
-1. Replace the synthetic dataset with the provided `data.json` and validate it
-   with the Zod contract.
-2. Implement the provided SSE event contract in `/api/chat` and replace the
-   local fixture stream with a typed parser, preserving stop, loading, error and
-   abstention states.
-3. Add the dashboard visualisations: choropleth, radar, time-series, heat map or
-   growth-vs-share scatter, each with a table alternative and keyboard support.
-4. Add coordinated filtering beyond the current market selection, and reflect
-   period/region/product filters in the URL.
-5. Add the alert/threshold configurator with Zod validation, optimistic update
-   and rollback on failure.
-6. Add tests: selector/unit coverage, component tests and one Playwright happy
-   path across drill-down and assistant citation.
-7. Add observability, CI, deployment and the remaining README sections required
-   by the assignment.
+Next.js App Router with React Server Components keeps the dataset and aggregation
+out of the client bundle. TypeScript strict mode plus Zod-derived types gives one
+contract from JSON to UI. shadcn/ui provides accessible primitives, but the visual
+system is custom: cool operational palette, Bricolage Grotesque + IBM Plex Mono,
+hairline structure, signal tape, squared panels and a dense table-first layout.
+Tokens live in `src/app/globals.css` and are consumed by Tailwind/shadcn.
 
-## Notes
+### Streaming
 
-- The assignment brief is intentionally not committed to the repository.
-- The current chat fixtures are local placeholders, not the provided starter
-  pack, and are labelled as such in the interface.
+The chat uses the documented SSE contract directly through streaming `fetch` rather
+than `EventSource` (which is GET-only). A typed discriminated union parses every
+event. `AbortController` powers Stop; tokens are appended incrementally; the final
+done event supplies citations and confidence. Malformed/partial streams end in an
+explicit error state rather than an invented answer.
+
+### Trust surface
+
+- AI narrative carries an explicit "AI-generated" label.
+- Citations are rendered separately under "Evidence from source data", with dataset
+  IDs resolved to market/region/product/period labels and analyst links.
+- Confidence is qualitative and paired with an explanation, not a fake probability.
+- Abstentions say explicitly that nothing was extrapolated.
+- Transport failures are labelled as assistant errors, not data conclusions.
+- Model output is rendered as text; there is no `dangerouslySetInnerHTML`.
+
+### Data visualisation
+
+- **Map:** custom SVG paths generated at development time from `world-atlas` with
+  `d3-geo`; the runtime receives only path data. Links are real SVG anchors, so map
+  markets are keyboard reachable. The map zooms to the active region and has a data
+  table alternative.
+- **Radar:** Recharts, with colour plus dash patterns for each series, a 0–100
+  normalised scale and raw values in a table.
+- **Time series:** Recharts, dashed/solid distinctions plus a full data table.
+- **Heat map:** custom semantic table with roving tabindex, arrow-key navigation and
+  signed values in every cell, so colour is never the only signal.
+- **Overview trend:** lightweight SVG to avoid shipping a chart library for a
+  two-line thumbnail.
+
+### Coordinated views and URL state
+
+The URL carries the drill path and filters. Selecting a country, region, product,
+period or heat-map cell produces a URL that the server resolves into a new scope.
+All panels read from that scope, so map, radar, time series, tables and KPI band stay
+coordinated. The analyst route is partially prerendered: a Suspense fallback provides
+a fast shell while `searchParams` resolves the selected scope.
+
+### Forms
+
+The alert form uses a Zod schema, typed field errors and accessible descriptions.
+The optimistic rule is inserted immediately, then confirmed or rolled back after the
+simulated save. A deliberate "Simulate save failure" control makes the rollback path
+demonstrable and testable.
+
+## Accessibility
+
+Targeted at WCAG 2.1 AA:
+
+- Semantic landmarks, one `h1` per page, skip link, labelled navigation and controls.
+- Visible focus styles throughout; map links and heat-map cells are keyboard
+  reachable; heat map supports arrow keys, Home and End.
+- Text labels and icons accompany every status colour; chart series use line styles
+  and dash patterns in addition to colour.
+- Every chart has a data-table equivalent through `<details>`; the heat map is itself
+  a semantic table with signed values in every cell.
+- Screen-reader announcements for chat generation state, form errors and save/rollback.
+- Reduced-motion support for the streaming caret; chart animations are disabled.
+- Currency, percentages and periods use shared formatters; dates are pinned to UTC.
+- No colour-only status signals; status text is always present.
+
+## Testing
+
+```bash
+npm test        # Vitest: 4 files, 11 tests
+npm run test:e2e
+```
+
+Covered:
+
+- Data index/selectors: fact-table totals, canonical statuses, product drill-down,
+  heat-map dimensions, top-mover direction, sorted products, radar bounds.
+- Citation resolution: explicit labels, dataset-ID fallback and generated URLs.
+- `StatusBadge`: every status renders text, not just colour.
+- Alert configurator: schema rejection, optimistic save and rollback on forced failure.
+- Playwright: overview → market drill-down → assistant citation; alert save and
+  forced rollback.
+- Build, typecheck, lint and `npm audit` are clean.
+
+Deliberately skipped for time: visual regression tests, full keyboard traversal E2E
+for every chart, axe/Lighthouse CI budgets, and unit tests for Recharts internals.
+
+## Productionising
+
+- **Performance:** server-rendered data and selectors; client-only interactive islands;
+  no chart animation; 24-period tables are scrollable rather than virtualised; map is
+  pre-generated so no topology library ships to the browser. The heaviest client
+  chunks are Recharts and the map path data.
+- **Observability:** not wired to a vendor. Next steps are `useReportWebVitals` or
+  `@vercel/speed-insights` for Core Web Vitals, plus Sentry (or equivalent) for client
+  errors. The error boundary is already in place at `src/app/error.tsx`.
+- **Resilience and hardening:** Zod validation at the data and SSE boundaries;
+  explicit error/abstain states; AbortController cleanup; no HTML injection; strict
+  TypeScript; deterministic formatters to avoid hydration drift.
+- **Build and serving:** `next build` produces static overview/alerts/assistant pages,
+  a partially prerendered `/analyst` and a dynamic `/api/chat`; SSE responses set
+  `no-cache, no-transform` and disable proxy buffering.
+- **CI/CD:** `.github/workflows/ci.yml` runs install, lint, typecheck, unit tests and
+  build; a second job runs Playwright against a production server. The live Vercel
+  deployment was produced from this repository.
+
+## Key decisions and standards
+
+Followed:
+
+- Strict TypeScript, no `any`, Zod schemas and inferred types.
+- Immutable data index and pure selectors; no duplicate server data in client state.
+- URL as dashboard source of truth; Suspense for request-time scope.
+- Accessible tables behind charts; deterministic number formatting for hydration.
+- Biome for lint/format, Vitest/Testing Library, Playwright, GitHub Actions.
+- Demo data and fixtures stay in the repository; the binary assignment brief does
+  not.
+
+Skipped or deferred:
+
+- Real auth/SSO and role-based UI (explicitly out of scope; mock identity only).
+- Real LLM/RAG backend (explicitly out of scope).
+- Virtualised table, live-updating mode, command palette and Storybook (optional
+  stretch goals).
+- Vendor observability until a deployment target is chosen.
+
+## AI-assisted development
+
+AI was used as a pair programmer for scaffolding, refactoring, accessibility checks
+and test generation, with the following working rules:
+
+- Read the provided contract and docs first; do not invent backend behaviour.
+- Keep the human in charge of product and visual decisions; review every diff.
+- Prefer typed interfaces and schema validation over free-form object shapes.
+- Run lint, typecheck, unit tests, E2E and build after every substantial change.
+- Never ship unreviewed generated code; do not use AI to write the reasoning in this
+  README wholesale.
+
+## Known limitations / next
+
+- Assistant answers are canned fixtures, not real model output (by design).
+- Alert persistence is localStorage; there is no real alert service.
+- Dashboard KPIs use the canonical latest-period snapshot for share; historical
+  periods derive share from the fact table.
+- Add an accessible scatter/bubble view and a region-vs-region radar mode.
+- Add web-vitals/error tracking, Lighthouse budgets and a full axe pass.
+- Add a command palette and a context-aware assistant once the URL scope is stable.

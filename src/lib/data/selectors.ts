@@ -1,183 +1,453 @@
-import type { Dataset, Market, MarketStatus, TimeSeriesPoint } from "./schema";
+import type { DataIndex } from "./build";
+import { seriesKey } from "./build";
+import type { Anomaly, MarketStatus, SeriesPoint } from "./schema";
+
+export type DataScope = {
+  regionId?: string;
+  marketId?: string;
+  productId?: string;
+};
+
+export type KpiValue = {
+  period: string;
+  revenue: number;
+  growthPct: number;
+  sharePct: number;
+  forecastAttainmentPct: number;
+  status: MarketStatus;
+  anomalies: Anomaly[];
+};
 
 export type MarketSummary = {
   id: string;
   name: string;
   iso2: string;
+  iso3: string;
   regionId: string;
   regionName: string;
-  currency: string;
-  revenueLocal: number;
-  revenueUsd: number;
+  revenue: number;
   growthPct: number;
   marketSharePct: number;
   forecastAttainmentPct: number;
   status: MarketStatus;
-  series: TimeSeriesPoint[];
+  anomalies: Anomaly[];
+  series: SeriesPoint[];
 };
 
 export type RegionSummary = {
   id: string;
   name: string;
-  revenueUsd: number;
+  revenue: number;
   growthPct: number;
+  marketSharePct: number;
   forecastAttainmentPct: number;
   marketsAtRisk: number;
   marketCount: number;
-};
-
-export type PortfolioSummary = {
-  revenueUsd: number;
-  growthPct: number;
-  forecastAttainmentPct: number;
-  marketsAtRisk: number;
-  marketsOffTrack: number;
-  marketCount: number;
-  latestPeriod: string;
+  status: MarketStatus;
+  series: SeriesPoint[];
 };
 
 export type ProductSummary = {
   id: string;
   name: string;
-  family: string;
-  revenueUsd: number;
+  revenue: number;
   growthPct: number;
+  sharePct: number;
   forecastAttainmentPct: number;
-  portfolioSharePct: number;
   status: MarketStatus;
+  series: SeriesPoint[];
 };
 
-function latestPoint(market: Market): TimeSeriesPoint {
-  return market.series[market.series.length - 1];
+export type PortfolioSummary = {
+  revenue: number;
+  growthPct: number;
+  sharePct: number;
+  forecastAttainmentPct: number;
+  status: MarketStatus;
+  marketsAtRisk: number;
+  marketsOffTrack: number;
+  marketCount: number;
+  latestPeriod: string;
+  series: SeriesPoint[];
+};
+
+export type TopMovers = {
+  gainers: MarketSummary[];
+  decliners: MarketSummary[];
+};
+
+export type HeatmapCell = {
+  period: string;
+  variancePct: number;
+  actual: number;
+  forecast: number;
+};
+
+export type HeatmapRow = {
+  marketId: string;
+  name: string;
+  iso2: string;
+  status: MarketStatus;
+  cells: HeatmapCell[];
+};
+
+export type RadarEntityKind = "market" | "region";
+
+export type RadarValues = {
+  revenue: number;
+  growth: number;
+  share: number;
+  attainment: number;
+};
+
+export type RadarEntity = {
+  kind: RadarEntityKind;
+  id: string;
+  name: string;
+  raw: RadarValues;
+  values: RadarValues;
+};
+
+export function resolvePeriod(index: DataIndex, period?: string): string {
+  if (period && index.periodIndex.has(period)) return period;
+  return index.latestPeriod;
 }
 
-function statusRank(status: MarketStatus): number {
-  if (status === "off-track") return 2;
-  if (status === "at-risk") return 1;
-  return 0;
+export function getPointAt(index: DataIndex, series: SeriesPoint[], period?: string): SeriesPoint {
+  const resolved = resolvePeriod(index, period);
+  const pointIndex = index.periodIndex.get(resolved) ?? series.length - 1;
+  return series[pointIndex] ?? series[series.length - 1];
 }
 
-export function getMarketSummaries(dataset: Dataset): MarketSummary[] {
-  const regions = new Map(dataset.regions.map((region) => [region.id, region.name]));
-  return dataset.markets
+export function getSeriesForScope(index: DataIndex, scope: DataScope): SeriesPoint[] {
+  if (scope.marketId && scope.productId) {
+    return index.marketProductSeries.get(seriesKey(scope.marketId, scope.productId)) ?? [];
+  }
+  if (scope.marketId) {
+    return index.marketSeries.get(scope.marketId) ?? [];
+  }
+  if (scope.regionId && scope.productId) {
+    return index.regionProductSeries.get(seriesKey(scope.regionId, scope.productId)) ?? [];
+  }
+  if (scope.regionId) {
+    return index.regionSeries.get(scope.regionId) ?? [];
+  }
+  if (scope.productId) {
+    return index.productSeries.get(scope.productId) ?? [];
+  }
+  return index.portfolioSeries;
+}
+
+export function getScopeName(index: DataIndex, scope: DataScope): string {
+  if (scope.marketId) {
+    return index.marketsById.get(scope.marketId)?.name ?? scope.marketId;
+  }
+  if (scope.regionId) {
+    return index.regionsById.get(scope.regionId)?.name ?? scope.regionId;
+  }
+  if (scope.productId) {
+    return index.productsById.get(scope.productId)?.name ?? scope.productId;
+  }
+  return "Portfolio";
+}
+
+function safeDivide(numerator: number, denominator: number): number {
+  return denominator === 0 ? 0 : numerator / denominator;
+}
+
+function deriveStatus(attainment: number, growth: number): MarketStatus {
+  if (attainment <= 92 || growth <= -4.5) return "off_track";
+  if (attainment < 100 || growth < 2.1) return "at_risk";
+  return "on_track";
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getShareForScope(
+  index: DataIndex,
+  scope: DataScope,
+  period: string,
+  actual: number,
+): number {
+  if (scope.marketId && !scope.productId) {
+    const market = index.marketsById.get(scope.marketId);
+    if (!market) return 0;
+    if (period === index.latestPeriod) return market.kpis.sharePct;
+    const region = index.regionSeries.get(market.regionId);
+    const regionPoint = region ? getPointAt(index, region, period) : undefined;
+    return safeDivide(actual, regionPoint?.actual ?? 0) * 100;
+  }
+
+  if (scope.marketId && scope.productId) {
+    const marketSeries = index.marketSeries.get(scope.marketId);
+    const marketPoint = marketSeries ? getPointAt(index, marketSeries, period) : undefined;
+    return safeDivide(actual, marketPoint?.actual ?? 0) * 100;
+  }
+
+  if (scope.regionId && !scope.marketId && !scope.productId) {
+    const regionMarkets = index.marketsByRegion.get(scope.regionId) ?? [];
+    const weighted = regionMarkets.reduce(
+      (accumulator, market) => {
+        const marketSeries = index.marketSeries.get(market.id);
+        const point = marketSeries ? getPointAt(index, marketSeries, period) : undefined;
+        return {
+          share: accumulator.share + market.kpis.sharePct * (point?.actual ?? 0),
+          revenue: accumulator.revenue + (point?.actual ?? 0),
+        };
+      },
+      { share: 0, revenue: 0 },
+    );
+    return safeDivide(weighted.share, weighted.revenue);
+  }
+
+  if (scope.regionId && scope.productId) {
+    const regionSeries = index.regionSeries.get(scope.regionId);
+    const regionPoint = regionSeries ? getPointAt(index, regionSeries, period) : undefined;
+    return safeDivide(actual, regionPoint?.actual ?? 0) * 100;
+  }
+
+  if (scope.productId) {
+    const portfolioPoint = getPointAt(index, index.portfolioSeries, period);
+    return safeDivide(actual, portfolioPoint.actual) * 100;
+  }
+
+  return 100;
+}
+
+export function getKpisForScope(index: DataIndex, scope: DataScope, period?: string): KpiValue {
+  const resolved = resolvePeriod(index, period);
+  const series = getSeriesForScope(index, scope);
+  const point = getPointAt(index, series, resolved);
+  const growthPct =
+    point.priorYear === 0 ? 0 : ((point.actual - point.priorYear) / point.priorYear) * 100;
+  const forecastAttainmentPct = point.forecast === 0 ? 0 : (point.actual / point.forecast) * 100;
+
+  const market =
+    scope.marketId && !scope.productId ? index.marketsById.get(scope.marketId) : undefined;
+
+  return {
+    period: resolved,
+    revenue: point.actual,
+    growthPct,
+    sharePct: getShareForScope(index, scope, resolved, point.actual),
+    forecastAttainmentPct,
+    status:
+      market && resolved === index.latestPeriod
+        ? market.kpis.status
+        : deriveStatus(forecastAttainmentPct, growthPct),
+    anomalies: market ? market.kpis.anomalies : [],
+  };
+}
+
+export function getMarketSummaries(
+  index: DataIndex,
+  params: {
+    period?: string;
+    regionId?: string;
+    productId?: string;
+  } = {},
+): MarketSummary[] {
+  const period = resolvePeriod(index, params.period);
+
+  return index.dataset.markets
+    .filter((market) => !params.regionId || market.regionId === params.regionId)
     .map((market) => {
-      const point = latestPoint(market);
+      const scope: DataScope = {
+        marketId: market.id,
+        productId: params.productId,
+      };
+      const series = getSeriesForScope(index, scope);
+      const kpis = getKpisForScope(index, scope, period);
+      const region = index.regionsById.get(market.regionId);
       return {
         id: market.id,
         name: market.name,
         iso2: market.iso2,
+        iso3: market.iso3,
         regionId: market.regionId,
-        regionName: regions.get(market.regionId) ?? market.regionId,
-        currency: market.currency,
-        revenueLocal: point.revenue,
-        revenueUsd: point.revenue * market.fxToUsd,
-        growthPct: market.kpis.growthPct,
-        marketSharePct: market.kpis.marketSharePct,
-        forecastAttainmentPct: market.kpis.forecastAttainmentPct,
-        status: market.kpis.status,
-        series: market.series,
+        regionName: region?.name ?? market.regionId,
+        revenue: kpis.revenue,
+        growthPct: kpis.growthPct,
+        marketSharePct: kpis.sharePct,
+        forecastAttainmentPct: kpis.forecastAttainmentPct,
+        status: kpis.status,
+        anomalies: kpis.anomalies,
+        series,
       };
     })
     .sort((left, right) => {
       const risk = statusRank(right.status) - statusRank(left.status);
-      return risk !== 0 ? risk : right.revenueUsd - left.revenueUsd;
+      return risk !== 0 ? risk : right.revenue - left.revenue;
     });
 }
 
-export function getPortfolioSummary(dataset: Dataset): PortfolioSummary {
-  const totals = dataset.markets.reduce(
-    (accumulator, market) => {
-      const point = latestPoint(market);
-      return {
-        revenueUsd: accumulator.revenueUsd + point.revenue * market.fxToUsd,
-        forecastUsd: accumulator.forecastUsd + point.forecast * market.fxToUsd,
-        priorYearUsd: accumulator.priorYearUsd + point.priorYear * market.fxToUsd,
-      };
-    },
-    { revenueUsd: 0, forecastUsd: 0, priorYearUsd: 0 },
-  );
+export function getRegionSummaries(
+  index: DataIndex,
+  params: { period?: string; productId?: string } = {},
+): RegionSummary[] {
+  const period = resolvePeriod(index, params.period);
+  const markets = getMarketSummaries(index, {
+    period,
+    productId: params.productId,
+  });
 
-  return {
-    revenueUsd: totals.revenueUsd,
-    growthPct: ((totals.revenueUsd - totals.priorYearUsd) / totals.priorYearUsd) * 100,
-    forecastAttainmentPct: (totals.revenueUsd / totals.forecastUsd) * 100,
-    marketsAtRisk: dataset.markets.filter((market) => market.kpis.status !== "on-track").length,
-    marketsOffTrack: dataset.markets.filter((market) => market.kpis.status === "off-track").length,
-    marketCount: dataset.markets.length,
-    latestPeriod: dataset.metadata.periods[dataset.metadata.periods.length - 1],
-  };
-}
-
-export function getRegionSummaries(dataset: Dataset): RegionSummary[] {
-  const markets = getMarketSummaries(dataset);
-  return dataset.regions.map((region) => {
+  return index.dataset.regions.map((region) => {
+    const scope: DataScope = { regionId: region.id, productId: params.productId };
+    const series = getSeriesForScope(index, scope);
+    const kpis = getKpisForScope(index, scope, period);
     const regionMarkets = markets.filter((market) => market.regionId === region.id);
-    const revenueUsd = regionMarkets.reduce((total, market) => total + market.revenueUsd, 0);
-    const forecastUsd = dataset.markets
-      .filter((market) => market.regionId === region.id)
-      .reduce((total, market) => total + latestPoint(market).forecast * market.fxToUsd, 0);
-    const priorYearUsd = dataset.markets
-      .filter((market) => market.regionId === region.id)
-      .reduce((total, market) => total + latestPoint(market).priorYear * market.fxToUsd, 0);
     return {
       id: region.id,
       name: region.name,
-      revenueUsd,
-      growthPct: ((revenueUsd - priorYearUsd) / priorYearUsd) * 100,
-      forecastAttainmentPct: (revenueUsd / forecastUsd) * 100,
-      marketsAtRisk: regionMarkets.filter((market) => market.status !== "on-track").length,
+      revenue: kpis.revenue,
+      growthPct: kpis.growthPct,
+      marketSharePct: kpis.sharePct,
+      forecastAttainmentPct: kpis.forecastAttainmentPct,
+      marketsAtRisk: regionMarkets.filter((market) => market.status !== "on_track").length,
       marketCount: regionMarkets.length,
+      status: kpis.status,
+      series,
     };
   });
 }
 
-export function getProductSummaries(dataset: Dataset): ProductSummary[] {
-  const portfolioUsd = dataset.markets.reduce(
-    (total, market) => total + latestPoint(market).revenue * market.fxToUsd,
-    0,
-  );
+export function getProductSummaries(
+  index: DataIndex,
+  params: { period?: string; regionId?: string; marketId?: string } = {},
+): ProductSummary[] {
+  const period = resolvePeriod(index, params.period);
+  const scopeBase: DataScope = {
+    regionId: params.regionId,
+    marketId: params.marketId,
+  };
+  const baseSeries = getSeriesForScope(index, scopeBase);
+  const basePoint = getPointAt(index, baseSeries, period);
 
-  return dataset.products
+  return index.dataset.products
     .map((product) => {
-      const productTotals = dataset.markets.reduce(
-        (accumulator, market) => {
-          const productMarket = market.products.find((entry) => entry.productId === product.id);
-          if (!productMarket) return accumulator;
-          const point = productMarket.series[productMarket.series.length - 1];
-          return {
-            revenueUsd: accumulator.revenueUsd + point.revenue * market.fxToUsd,
-            forecastUsd: accumulator.forecastUsd + point.forecast * market.fxToUsd,
-            priorYearUsd: accumulator.priorYearUsd + point.priorYear * market.fxToUsd,
-          };
-        },
-        { revenueUsd: 0, forecastUsd: 0, priorYearUsd: 0 },
-      );
-
-      const growthPct =
-        ((productTotals.revenueUsd - productTotals.priorYearUsd) / productTotals.priorYearUsd) *
-        100;
-      const attainment = (productTotals.revenueUsd / productTotals.forecastUsd) * 100;
-
+      const scope: DataScope = { ...scopeBase, productId: product.id };
+      const series = getSeriesForScope(index, scope);
+      const kpis = getKpisForScope(index, scope, period);
       return {
         id: product.id,
         name: product.name,
-        family: product.family,
-        revenueUsd: productTotals.revenueUsd,
-        growthPct,
-        forecastAttainmentPct: attainment,
-        portfolioSharePct: (productTotals.revenueUsd / portfolioUsd) * 100,
-        status: productStatus(attainment, growthPct),
+        revenue: kpis.revenue,
+        growthPct: kpis.growthPct,
+        sharePct: safeDivide(kpis.revenue, basePoint.actual) * 100,
+        forecastAttainmentPct: kpis.forecastAttainmentPct,
+        status: kpis.status,
+        series,
       };
     })
-    .sort((left, right) => right.revenueUsd - left.revenueUsd);
+    .sort((left, right) => right.revenue - left.revenue);
 }
 
-function productStatus(attainment: number, growth: number): MarketStatus {
-  if (attainment < 92 || growth < -8) return "off-track";
-  if (attainment < 99 || growth < -2) return "at-risk";
-  return "on-track";
+export function getPortfolioSummary(
+  index: DataIndex,
+  params: { period?: string; productId?: string } = {},
+): PortfolioSummary {
+  const period = resolvePeriod(index, params.period);
+  const scope: DataScope = { productId: params.productId };
+  const series = getSeriesForScope(index, scope);
+  const kpis = getKpisForScope(index, scope, period);
+  const markets = getMarketSummaries(index, {
+    period,
+    productId: params.productId,
+  });
+
+  return {
+    revenue: kpis.revenue,
+    growthPct: kpis.growthPct,
+    sharePct: kpis.sharePct,
+    forecastAttainmentPct: kpis.forecastAttainmentPct,
+    status: kpis.status,
+    marketsAtRisk: markets.filter((market) => market.status !== "on_track").length,
+    marketsOffTrack: markets.filter((market) => market.status === "off_track").length,
+    marketCount: markets.length,
+    latestPeriod: period,
+    series,
+  };
 }
 
-export function getLatestPeriod(dataset: Dataset): string {
-  return dataset.metadata.periods[dataset.metadata.periods.length - 1];
+export function getTopMovers(
+  index: DataIndex,
+  params: { period?: string; regionId?: string; productId?: string; limit?: number } = {},
+): TopMovers {
+  const limit = params.limit ?? 3;
+  const markets = getMarketSummaries(index, params);
+  return {
+    gainers: markets
+      .filter((market) => market.growthPct > 0)
+      .sort((a, b) => b.growthPct - a.growthPct)
+      .slice(0, limit),
+    decliners: markets
+      .filter((market) => market.growthPct < 0)
+      .sort((a, b) => a.growthPct - b.growthPct)
+      .slice(0, limit),
+  };
+}
+
+export function getHeatmapData(
+  index: DataIndex,
+  params: { regionId?: string; productId?: string } = {},
+): HeatmapRow[] {
+  const markets = getMarketSummaries(index, params);
+
+  return markets.map((market) => ({
+    marketId: market.id,
+    name: market.name,
+    iso2: market.iso2,
+    status: market.status,
+    cells: market.series.map((point) => ({
+      period: point.period,
+      actual: point.actual,
+      forecast: point.forecast,
+      variancePct:
+        point.forecast === 0 ? 0 : ((point.actual - point.forecast) / point.forecast) * 100,
+    })),
+  }));
+}
+
+export function getRadarComparison(
+  index: DataIndex,
+  entities: Array<{ kind: RadarEntityKind; id: string }>,
+  period?: string,
+): RadarEntity[] {
+  const resolved = resolvePeriod(index, period);
+  const rows = entities.map((entity) => {
+    const scope: DataScope =
+      entity.kind === "market" ? { marketId: entity.id } : { regionId: entity.id };
+    const kpis = getKpisForScope(index, scope, resolved);
+    return {
+      kind: entity.kind,
+      id: entity.id,
+      name: getScopeName(index, scope),
+      raw: {
+        revenue: kpis.revenue,
+        growth: kpis.growthPct,
+        share: kpis.sharePct,
+        attainment: kpis.forecastAttainmentPct,
+      },
+    };
+  });
+
+  const maxRevenue = Math.max(...rows.map((row) => row.raw.revenue), 1);
+
+  return rows.map((row) => ({
+    ...row,
+    values: {
+      revenue: clamp((row.raw.revenue / maxRevenue) * 100, 0, 100),
+      growth: clamp(((row.raw.growth + 15) / 40) * 100, 0, 100),
+      share: clamp(row.raw.share, 0, 100),
+      attainment: clamp(((row.raw.attainment - 80) / 30) * 100, 0, 100),
+    },
+  }));
+}
+
+export function statusRank(status: MarketStatus): number {
+  if (status === "off_track") return 2;
+  if (status === "at_risk") return 1;
+  return 0;
 }

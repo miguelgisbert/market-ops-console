@@ -1,9 +1,4 @@
-const compactCurrency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
+import type { MarketStatus } from "@/lib/data/schema";
 
 const fullCurrency = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -11,30 +6,45 @@ const fullCurrency = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-const compactNumber = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
+function compact(value: number): string {
+  const sign = value < 0 ? "−" : "";
+  const absolute = Math.abs(value);
+  const units = [
+    { threshold: 1_000_000_000, suffix: "B" },
+    { threshold: 1_000_000, suffix: "M" },
+    { threshold: 1_000, suffix: "K" },
+  ];
+  for (const unit of units) {
+    if (absolute >= unit.threshold) {
+      const scaled = absolute / unit.threshold;
+      const digits = scaled >= 100 ? 0 : 1;
+      return `${sign}${scaled.toFixed(digits)}${unit.suffix}`;
+    }
+  }
+  return `${sign}${absolute.toFixed(0)}`;
+}
 
 export function formatCurrency(
   value: number,
-  currency = "USD",
-  options: { compact?: boolean } = {},
+  options: { compact?: boolean; currency?: string } = {},
 ): string {
-  if (currency === "USD") {
-    return options.compact ? compactCurrency.format(value) : fullCurrency.format(value);
+  if (options.compact) {
+    return `${value < 0 ? "−" : ""}$${compact(Math.abs(value))}`;
   }
 
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    notation: options.compact ? "compact" : "standard",
-    maximumFractionDigits: options.compact ? 1 : 0,
-  }).format(value);
+  if (options.currency && options.currency !== "USD") {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: options.currency,
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  return fullCurrency.format(value);
 }
 
 export function formatCompactNumber(value: number): string {
-  return compactNumber.format(value);
+  return compact(Math.abs(value));
 }
 
 export function formatPercent(
@@ -56,8 +66,22 @@ export function formatPeriodLabel(period: string): string {
   }).format(new Date(Date.UTC(year, month - 1, 1)));
 }
 
-export function statusLabel(status: "on-track" | "at-risk" | "off-track"): string {
-  if (status === "on-track") return "On track";
-  if (status === "at-risk") return "At risk";
+export function formatPeriodShort(period: string): string {
+  const [, month] = period.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(2026, month - 1, 1)));
+}
+
+export function formatPeriodAxis(period: string): string {
+  const [year, month] = period.split("-").map(Number);
+  if (month === 1) return `${formatPeriodShort(period)} '${String(year).slice(2)}`;
+  return formatPeriodShort(period);
+}
+
+export function statusLabel(status: MarketStatus): string {
+  if (status === "on_track") return "On track";
+  if (status === "at_risk") return "At risk";
   return "Off track";
 }

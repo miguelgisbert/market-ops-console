@@ -4,39 +4,40 @@ import { type AttentionItem, AttentionList } from "@/components/dashboard/attent
 import { KpiBand, type KpiMetric } from "@/components/dashboard/kpi-band";
 import { MarketTable } from "@/components/dashboard/market-table";
 import { MarketTape } from "@/components/dashboard/market-tape";
-import { getDataset, getMarketSummaries, getPortfolioSummary } from "@/lib/data";
+import { PortfolioTrend } from "@/components/dashboard/portfolio-trend";
+import { TopMovers } from "@/components/dashboard/top-movers";
+import {
+  dataIndex,
+  getMarketSummaries,
+  getPortfolioSummary,
+  getTopMovers,
+  statusRank,
+} from "@/lib/data";
 import { formatCurrency, formatPercent, formatPeriodLabel } from "@/lib/format";
 
-function riskRank(status: "on-track" | "at-risk" | "off-track"): number {
-  if (status === "off-track") return 2;
-  if (status === "at-risk") return 1;
-  return 0;
-}
-
 export default function OverviewPage() {
-  const dataset = getDataset();
-  const markets = getMarketSummaries(dataset);
-  const portfolio = getPortfolioSummary(dataset);
+  const markets = getMarketSummaries(dataIndex);
+  const portfolio = getPortfolioSummary(dataIndex);
+  const movers = getTopMovers(dataIndex, { limit: 3 });
   const periodLabel = formatPeriodLabel(portfolio.latestPeriod);
 
-  const attention: AttentionItem[] = dataset.markets
-    .filter((market) => market.kpis.status !== "on-track")
+  const attention: AttentionItem[] = markets
+    .filter((market) => market.status !== "on_track")
     .map((market) => {
-      const anomaly = market.kpis.anomalies[market.kpis.anomalies.length - 1];
-      const region = dataset.regions.find((entry) => entry.id === market.regionId);
+      const anomaly = market.anomalies[market.anomalies.length - 1];
       return {
         id: market.id,
         name: market.name,
-        regionName: region?.name ?? market.regionId,
-        status: market.kpis.status,
+        regionName: market.regionName,
+        status: market.status,
         period: anomaly?.period ?? portfolio.latestPeriod,
         note:
           anomaly?.note ??
-          `Revenue landed ${formatPercent(market.kpis.forecastAttainmentPct)} of forecast, with growth of ${formatPercent(market.kpis.growthPct, { signed: true })} against the prior year.`,
+          `Revenue landed ${formatPercent(market.forecastAttainmentPct)} of forecast, with growth of ${formatPercent(market.growthPct, { signed: true })} against the prior year.`,
       };
     })
     .sort((left, right) => {
-      const risk = riskRank(right.status) - riskRank(left.status);
+      const risk = statusRank(right.status) - statusRank(left.status);
       return risk !== 0 ? risk : right.period.localeCompare(left.period);
     })
     .slice(0, 5);
@@ -44,7 +45,7 @@ export default function OverviewPage() {
   const metrics: KpiMetric[] = [
     {
       label: "Portfolio revenue",
-      value: formatCurrency(portfolio.revenueUsd, "USD", { compact: true }),
+      value: formatCurrency(portfolio.revenue, { compact: true }),
       detail: `${periodLabel}, all markets`,
     },
     {
@@ -57,7 +58,7 @@ export default function OverviewPage() {
       label: "Forecast attainment",
       value: formatPercent(portfolio.forecastAttainmentPct),
       detail: "Actual revenue against plan",
-      tone: portfolio.forecastAttainmentPct >= 98 ? "positive" : "warning",
+      tone: portfolio.forecastAttainmentPct >= 100 ? "positive" : "warning",
     },
     {
       label: "Markets at risk",
@@ -78,8 +79,8 @@ export default function OverviewPage() {
             Portfolio overview
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Twelve markets, five products, one view of where the portfolio is winning and where the
-            forecast is slipping.
+            Thirteen markets, five products, one view of where the portfolio is winning and where
+            the forecast is slipping.
           </p>
         </div>
         <div className="flex shrink-0 items-stretch border bg-card">
@@ -102,6 +103,27 @@ export default function OverviewPage() {
       <MarketTape markets={markets} />
 
       <KpiBand metrics={metrics} />
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <section aria-labelledby="portfolio-trend-heading" className="border bg-card">
+          <div className="border-b px-4 py-3">
+            <h2 id="portfolio-trend-heading" className="text-sm font-semibold">
+              Portfolio trajectory
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Actual against forecast, last 24 periods.
+            </p>
+          </div>
+          <div className="px-4 py-4">
+            <PortfolioTrend series={portfolio.series} />
+          </div>
+        </section>
+        <TopMovers
+          gainers={movers.gainers}
+          decliners={movers.decliners}
+          period={portfolio.latestPeriod}
+        />
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
         <MarketTable markets={markets} />

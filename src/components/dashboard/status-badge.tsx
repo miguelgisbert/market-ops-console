@@ -4,15 +4,15 @@ import { statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const statusStyles: Record<MarketStatus, { className: string; icon: typeof CheckCircle2 }> = {
-  "on-track": {
+  on_track: {
     className: "border-status-ontrack/35 bg-status-ontrack/8 text-status-ontrack",
     icon: CheckCircle2,
   },
-  "at-risk": {
+  at_risk: {
     className: "border-status-atrisk/40 bg-status-atrisk/10 text-status-atrisk",
     icon: CircleAlert,
   },
-  "off-track": {
+  off_track: {
     className: "border-status-offtrack/40 bg-status-offtrack/10 text-status-offtrack",
     icon: OctagonX,
   },

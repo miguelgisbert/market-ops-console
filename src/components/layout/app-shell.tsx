@@ -1,14 +1,19 @@
 import Link from "next/link";
-import { getDataset } from "@/lib/data";
+import { dataset } from "@/lib/data";
 import { formatPeriodLabel } from "@/lib/format";
 import { AppNav } from "./app-nav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const dataset = getDataset();
-  const latestPeriod = dataset.metadata.periods[dataset.metadata.periods.length - 1];
+  const latestPeriod = dataset.meta.latestPeriod;
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main-content"
+        className="sr-only z-50 bg-primary px-3 py-2 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to content
+      </a>
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-[1600px] items-stretch gap-5 px-4 lg:px-8">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
@@ -33,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden items-center gap-1.5 border px-2 py-1 font-mono text-[10px] text-muted-foreground md:inline-flex">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-status-ontrack" />
-              {dataset.metadata.source === "synthetic" ? "Demo data" : "Starter pack"}
+              Starter pack
             </span>
             <span className="border px-2 py-1 font-mono text-[10px] text-foreground">
               {formatPeriodLabel(latestPeriod)}
@@ -54,7 +59,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 lg:px-8 lg:py-8">
+      <main
+        id="main-content"
+        className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 lg:px-8 lg:py-8"
+      >
         {children}
       </main>
 
@@ -62,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 px-4 py-4 font-mono text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <span>Meridian market operations console</span>
           <span>
-            Synthetic dataset · {dataset.markets.length} markets · {dataset.products.length}{" "}
+            Canonical dataset · {dataset.markets.length} markets · {dataset.products.length}{" "}
             products
           </span>
         </div>

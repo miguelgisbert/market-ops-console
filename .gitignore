@@ -45,3 +45,11 @@ next-env.d.ts
 
 # Playwright CLI
 .playwright-cli/
+
+# test artifacts
+/test-results/
+/playwright-report/
+
+# Provided starter pack and assignment archive
+frontend-assignment-starter-pack/
+*.zip

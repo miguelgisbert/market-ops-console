@@ -213,3 +213,13 @@
     @apply font-mono tabular-nums;
   }
 }
+
+.map-market:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.map-market:focus-visible path {
+  stroke: var(--ring);
+  stroke-width: 2;
+}

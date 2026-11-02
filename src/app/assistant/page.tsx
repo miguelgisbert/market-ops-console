@@ -1,11 +1,25 @@
 import { Database, Sparkles } from "lucide-react";
 import { AssistantChat } from "@/components/assistant/assistant-chat";
+import { createCitationLookup } from "@/lib/chat/citations";
+import { dataset } from "@/lib/data";
 
 export const metadata = {
   title: "Assistant",
 };
 
 export default function AssistantPage() {
+  const lookup = createCitationLookup({
+    markets: dataset.markets.map((market) => ({
+      id: market.id,
+      name: market.name,
+      iso2: market.iso2,
+      regionId: market.regionId,
+    })),
+    regions: dataset.regions,
+    products: dataset.products,
+    latestPeriod: dataset.meta.latestPeriod,
+  });
+
   return (
     <div className="space-y-7">
       <header className="border-b pb-5">
@@ -20,7 +34,7 @@ export default function AssistantPage() {
       </header>
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,2.1fr)_minmax(300px,1fr)]">
-        <AssistantChat />
+        <AssistantChat lookup={lookup} />
 
         <aside className="space-y-4">
           <section className="border bg-card">
@@ -56,8 +70,8 @@ export default function AssistantPage() {
                 <div>
                   <p className="text-xs font-medium">Source data</p>
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    Revenue, forecast, units and prior-year values. Citations link back to the
-                    market or product used.
+                    Citations resolve against the canonical dataset and link to the market, product
+                    and period used.
                   </p>
                 </div>
               </div>
@@ -94,11 +108,11 @@ export default function AssistantPage() {
           </section>
 
           <section className="border border-dashed px-4 py-3">
-            <h2 className="text-xs font-semibold">Current behaviour</h2>
+            <h2 className="text-xs font-semibold">Streaming contract</h2>
             <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-              Streaming and evidence are simulated with local fixtures while the provided SSE
-              contract is pending. Stop, loading, abstention and error states are already
-              represented in the UI.
+              POST /api/chat returns Server-Sent Events: token events followed by a done event with
+              citations and confidence. An error event replaces the tokens when the mock service
+              fails. Stop aborts the fetch.
             </p>
           </section>
         </aside>
