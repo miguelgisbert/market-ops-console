@@ -1,6 +1,6 @@
 import { Database } from "lucide-react";
 import Link from "next/link";
-import { CommandPalette } from "@/components/command-palette";
+import { CommandPaletteLauncher } from "@/components/command-palette-launcher";
 import { dataset } from "@/lib/data";
 import { formatPeriodLabel } from "@/lib/format";
 import { AppNav } from "./app-nav";
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <CommandPalette
+            <CommandPaletteLauncher
               markets={dataset.markets.map((market) => ({
                 id: market.id,
                 name: market.name,

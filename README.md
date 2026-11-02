@@ -6,6 +6,7 @@ using the provided starter pack.
 
 **Live:** [https://market-ops-console.vercel.app](https://market-ops-console.vercel.app)
 **Repo:** [https://github.com/miguelgisbert/market-ops-console](https://github.com/miguelgisbert/market-ops-console)
+**Storybook:** [https://market-ops-storybook.vercel.app](https://market-ops-storybook.vercel.app)
 **Requirements audit:** [docs/requirements-audit.md](docs/requirements-audit.md)
 
 **Stack:** Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS v4,
@@ -81,6 +82,7 @@ npm audit           # 0 vulnerabilities
 - Stories for StatusBadge, KpiBand, MarketTape, AlertConfigurator and TimeSeriesChart.
 - Accessibility addon enabled.
 - `npm run storybook` / `npm run build-storybook`.
+- Live static Storybook: https://market-ops-storybook.vercel.app
 
 ### Alerts (`/alerts`)
 
@@ -331,15 +333,34 @@ Covered:
 - `StatusBadge`: every status renders text, not just colour.
 - Alert configurator: schema rejection, optimistic save and rollback on forced failure.
 - Storybook build with the a11y addon.
-- Playwright (9 paths): overview → market drill-down → assistant citation; alert
+- Playwright (11 paths): overview → market drill-down → assistant citation; alert
   save and forced rollback; shareable drill path with back/forward; assistant
   abstention and error states; mobile width without horizontal overflow; command
   palette navigation; live updates with preserved scope; assistant dashboard
-  context hand-off; virtualised fact table row count.
+  context hand-off; virtualised fact table row count; automated axe checks for the
+  core pages and command palette.
+- Axe (`@axe-core/playwright`, WCAG 2.0/2.1 A/AA): **0 violations** across `/`,
+  `/analyst`, a selected market view, `/assistant`, `/alerts` and the open command
+  palette.
 - Build, typecheck, lint and `npm audit` are clean.
 
 Deliberately skipped for time: visual regression tests, full keyboard traversal E2E
-for every chart, axe/Lighthouse CI budgets, and unit tests for Recharts internals.
+for every chart, Lighthouse budgets in CI, and unit tests for Recharts internals.
+
+## Quality evidence
+
+Lighthouse 12.8.2 against the live Vercel production deployment, Chrome 156,
+2 November 2026. Scores can vary with network and CPU throttling.
+
+| Page / profile   | Performance | Accessibility | Best practices | SEO |   LCP |    TBT | CLS |
+| ---------------- | ----------: | ------------: | -------------: | --: | ----: | -----: | --: |
+| Overview, mobile |          93 |           100 |            100 | 100 | 2.8 s | 170 ms |   0 |
+| Analyst, mobile  |          88 |           100 |            100 | 100 | 2.8 s | 330 ms |   0 |
+| Analyst, desktop |         100 |           100 |            100 | 100 | 0.6 s |   0 ms |   0 |
+
+The analyst charts are deferred until they approach the viewport, the fact table is
+virtualised and lazy-loaded, and the command palette is loaded on first open, so the
+initial dashboard route stays light.
 
 ## Productionising
 
@@ -359,7 +380,8 @@ for every chart, axe/Lighthouse CI budgets, and unit tests for Recharts internal
   responses set `no-cache, no-transform` and disable proxy buffering.
 - **CI/CD:** `.github/workflows/ci.yml` runs install, lint, typecheck, unit tests,
   Next build and Storybook build; a second job runs Playwright against a production
-  server. Vercel is connected to the repository.
+  server, including axe checks. Vercel is connected to the repository. Storybook is
+  also deployed as a static Vercel project.
 
 ## Key decisions and standards
 

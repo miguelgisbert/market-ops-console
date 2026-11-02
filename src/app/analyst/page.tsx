@@ -6,10 +6,12 @@ import { RegionTable } from "@/components/analyst/region-table";
 import { SelectedMarketPanel } from "@/components/analyst/selected-market-panel";
 import { VirtualizedFactTable } from "@/components/analyst/virtualized-fact-table";
 import { ChartPanel } from "@/components/charts/chart-panel";
-import { ChoroplethMap } from "@/components/charts/choropleth-map";
-import { RadarComparison } from "@/components/charts/radar-comparison";
-import { TimeSeriesChart } from "@/components/charts/time-series-chart";
-import { VarianceHeatmap } from "@/components/charts/variance-heatmap";
+import {
+  DeferredChoroplethMap,
+  DeferredRadarComparison,
+  DeferredTimeSeriesChart,
+  DeferredVarianceHeatmap,
+} from "@/components/charts/deferred-charts";
 import { ComparePicker } from "@/components/dashboard/compare-picker";
 import { KpiBand, type KpiMetric } from "@/components/dashboard/kpi-band";
 import { LiveModeControl } from "@/components/dashboard/live-mode-control";
@@ -292,7 +294,7 @@ async function AnalystContent({
           title={`Market map · ${mapMetricLabels[metric]}`}
           description="Select a country to drill in. Use the scope controls to change the metric."
         >
-          <ChoroplethMap
+          <DeferredChoroplethMap
             markets={mapMarkets}
             metric={metric}
             selectedMarketId={selectedMarket?.id}
@@ -329,7 +331,7 @@ async function AnalystContent({
             }}
           />
           <div className="mt-3">
-            <RadarComparison entities={radarEntities} />
+            <DeferredRadarComparison entities={radarEntities} />
           </div>
         </ChartPanel>
       </div>
@@ -339,7 +341,11 @@ async function AnalystContent({
         title={`Actual vs forecast vs prior year · ${scopeName}`}
         description={`Monthly revenue through ${periodLabel}.`}
       >
-        <TimeSeriesChart data={scopeSeries} entityName={scopeName} selectedPeriod={period} />
+        <DeferredTimeSeriesChart
+          data={scopeSeries}
+          entityName={scopeName}
+          selectedPeriod={period}
+        />
       </ChartPanel>
 
       {selectedMarket ? (
@@ -355,7 +361,7 @@ async function AnalystContent({
         title="Forecast variance heat map"
         description="Markets × periods. Signed variance against forecast; select a cell to focus the other views."
       >
-        <VarianceHeatmap
+        <DeferredVarianceHeatmap
           rows={getHeatmapData(index, { regionId, productId, markets })}
           periods={dataset.meta.periods}
           selectedPeriod={period}

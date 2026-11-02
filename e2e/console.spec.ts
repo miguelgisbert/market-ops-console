@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test("drills into a market and verifies an assistant citation", async ({ page }) => {
@@ -75,7 +76,13 @@ test("handles assistant abstention and error states", async ({ page }) => {
 test("stays within the mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
-  for (const path of ["/", "/analyst", "/assistant", "/alerts"]) {
+  for (const path of [
+    "/",
+    "/analyst",
+    "/analyst?region=eu&market=de&period=2026-03",
+    "/assistant",
+    "/alerts",
+  ]) {
     await page.goto(path);
     const overflows = await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,
@@ -125,4 +132,39 @@ test("virtualises the full fact table", async ({ page }) => {
   const table = page.getByRole("table", { name: /Virtualised fact table/ });
   await expect(table).toHaveAttribute("aria-rowcount", "1561");
   await expect(page.getByText(/^Mounted /)).toBeVisible();
+});
+
+test("has no automated WCAG A/AA violations on core pages", async ({ page }) => {
+  for (const path of [
+    "/",
+    "/analyst",
+    "/analyst?region=eu&market=de&period=2026-03",
+    "/assistant",
+    "/alerts",
+  ]) {
+    await page.goto(path);
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+
+    expect(
+      results.violations.map((violation) => ({
+        id: violation.id,
+        nodes: violation.nodes.map((node) => node.target),
+      })),
+      path,
+    ).toEqual([]);
+  }
+});
+
+test("has no automated WCAG A/AA violations in the command palette", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("Control+k");
+  await expect(page.getByRole("dialog", { name: "Command palette" })).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(
+    results.violations.map((violation) => ({
+      id: violation.id,
+      nodes: violation.nodes.map((node) => node.target),
+    })),
+  ).toEqual([]);
 });

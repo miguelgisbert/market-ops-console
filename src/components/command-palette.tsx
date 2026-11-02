@@ -52,53 +52,31 @@ const pageIcons = {
   Alerts: Bell,
 } as const;
 
-export function CommandPalette({
+export function CommandPaletteDialog({
+  open,
+  onOpenChange,
   markets,
   products,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   markets: Array<{ id: string; name: string; iso2: string }>;
   products: Array<{ id: string; name: string }>;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setOpen((current) => !current);
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
 
   useEffect(() => {
     if (open) setSearch("");
   }, [open]);
 
   function select(item: PaletteItem) {
-    setOpen(false);
+    onOpenChange(false);
     router.push(item.href);
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger asChild>
-        <button
-          type="button"
-          aria-label="Open command palette"
-          aria-keyshortcuts="Control+K Meta+K"
-          className="inline-flex h-8 items-center gap-1.5 border bg-card px-2 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <Search aria-hidden="true" className="size-3" />
-          <span className="hidden sm:inline">Search</span>
-          <kbd className="hidden rounded-sm border bg-muted px-1 font-mono text-[9px] text-muted-foreground md:inline">
-            Ctrl K
-          </kbd>
-        </button>
-      </Dialog.Trigger>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/20" />
         <Dialog.Content
