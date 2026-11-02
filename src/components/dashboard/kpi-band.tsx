@@ -21,7 +21,7 @@ export function KpiBand({ metrics }: { metrics: KpiMetric[] }) {
       className="grid divide-y border bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x"
     >
       {metrics.map((metric) => (
-        <div key={metric.label} className="px-4 py-4 first:border-l-2 first:border-l-primary">
+        <div key={metric.label} className="px-4 py-4">
           <p className="data-label">{metric.label}</p>
           <p
             className={cn(

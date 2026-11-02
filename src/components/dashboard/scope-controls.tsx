@@ -3,9 +3,9 @@
 import { RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { SelectField } from "@/components/form/select-field";
 import { type MapMetric, mapMetricLabels } from "@/lib/dashboard/config";
 import { formatPeriodLabel } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 type Option = { id: string; name: string; regionId?: string };
 
@@ -17,6 +17,8 @@ export type ScopeState = {
   metric?: MapMetric;
   compare?: string;
 };
+
+const allValue = "__all__";
 
 export function ScopeControls({
   regions,
@@ -58,112 +60,96 @@ export function ScopeControls({
       aria-busy={pending}
       className="flex flex-wrap items-end gap-3 border bg-card px-4 py-3"
     >
-      <Field label="Region" htmlFor="scope-region">
-        <select
-          id="scope-region"
-          value={current.region ?? ""}
-          onChange={(event) =>
-            navigate({
-              ...current,
-              region: event.target.value || undefined,
-              market: undefined,
-            })
-          }
-          className={selectClass}
-        >
-          <option value="">All regions</option>
-          {regions.map((region) => (
-            <option key={region.id} value={region.id}>
-              {region.name}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <SelectField
+        id="scope-region"
+        label="Region"
+        value={current.region ?? allValue}
+        options={[
+          { value: allValue, label: "All regions" },
+          ...regions.map((region) => ({ value: region.id, label: region.name })),
+        ]}
+        onValueChange={(value) =>
+          navigate({
+            ...current,
+            region: value === allValue ? undefined : value,
+            market: undefined,
+          })
+        }
+        className="w-36"
+      />
 
-      <Field label="Market" htmlFor="scope-market">
-        <select
-          id="scope-market"
-          value={current.market ?? ""}
-          onChange={(event) => {
-            const marketId = event.target.value;
-            const market = markets.find((entry) => entry.id === marketId);
-            navigate({
-              ...current,
-              market: marketId || undefined,
-              region: market?.regionId ?? current.region,
-            });
-          }}
-          className={selectClass}
-        >
-          <option value="">All markets</option>
-          {availableMarkets.map((market) => (
-            <option key={market.id} value={market.id}>
-              {market.name}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <SelectField
+        id="scope-market"
+        label="Market"
+        value={current.market ?? allValue}
+        options={[
+          { value: allValue, label: "All markets" },
+          ...availableMarkets.map((market) => ({
+            value: market.id,
+            label: market.name,
+          })),
+        ]}
+        onValueChange={(value) => {
+          const market = markets.find((entry) => entry.id === value);
+          navigate({
+            ...current,
+            market: value === allValue ? undefined : value,
+            region: market?.regionId ?? current.region,
+          });
+        }}
+        className="w-36"
+      />
 
-      <Field label="Product" htmlFor="scope-product">
-        <select
-          id="scope-product"
-          value={current.product ?? ""}
-          onChange={(event) =>
-            navigate({
-              ...current,
-              product: event.target.value || undefined,
-            })
-          }
-          className={selectClass}
-        >
-          <option value="">All products</option>
-          {products.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <SelectField
+        id="scope-product"
+        label="Product"
+        value={current.product ?? allValue}
+        options={[
+          { value: allValue, label: "All products" },
+          ...products.map((product) => ({ value: product.id, label: product.name })),
+        ]}
+        onValueChange={(value) =>
+          navigate({
+            ...current,
+            product: value === allValue ? undefined : value,
+          })
+        }
+        className="w-36"
+      />
 
-      <Field label="Period" htmlFor="scope-period">
-        <select
-          id="scope-period"
-          value={current.period ?? periods[periods.length - 1] ?? ""}
-          onChange={(event) =>
-            navigate({
-              ...current,
-              period: event.target.value || undefined,
-            })
-          }
-          className={selectClass}
-        >
-          {periods.map((period) => (
-            <option key={period} value={period}>
-              {formatPeriodLabel(period)}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <SelectField
+        id="scope-period"
+        label="Period"
+        value={current.period ?? periods[periods.length - 1]}
+        options={periods.map((period) => ({
+          value: period,
+          label: formatPeriodLabel(period),
+        }))}
+        onValueChange={(value) =>
+          navigate({
+            ...current,
+            period: value || undefined,
+          })
+        }
+        className="w-36"
+      />
 
-      <Field label="Map metric" htmlFor="scope-metric">
-        <select
-          id="scope-metric"
-          value={current.metric ?? "growthPct"}
-          onChange={(event) =>
-            navigate({
-              ...current,
-              metric: event.target.value as MapMetric,
-            })
-          }
-          className={selectClass}
-        >
-          {Object.entries(mapMetricLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <SelectField
+        id="scope-metric"
+        label="Map metric"
+        value={current.metric ?? "growthPct"}
+        options={Object.entries(mapMetricLabels).map(([value, label]) => ({
+          value,
+          label,
+        }))}
+        onValueChange={(value) =>
+          navigate({
+            ...current,
+            metric: value as MapMetric,
+          })
+        }
+        className="w-40"
+      />
 
       <button
         type="button"
@@ -179,27 +165,5 @@ export function ScopeControls({
         </span>
       ) : null}
     </section>
-  );
-}
-
-const selectClass =
-  "h-8 w-full min-w-36 border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30";
-
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={cn("min-w-32")}>
-      <label htmlFor={htmlFor} className="data-label mb-1 block">
-        {label}
-      </label>
-      {children}
-    </div>
   );
 }

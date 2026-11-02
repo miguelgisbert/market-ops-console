@@ -1,4 +1,3 @@
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
@@ -31,7 +30,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <TooltipProvider>
           <AppShell>{children}</AppShell>
         </TooltipProvider>
-        <SpeedInsights />
       </body>
     </html>
   );

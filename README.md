@@ -276,10 +276,9 @@ for every chart, axe/Lighthouse CI budgets, and unit tests for Recharts internal
   no chart animation; 24-period tables are scrollable rather than virtualised; map is
   pre-generated so no topology library ships to the browser. The heaviest client
   chunks are Recharts and the map path data.
-- **Observability:** Vercel Speed Insights is mounted in the root layout and
-  collects web-vitals on the live deployment. The error boundary at
-  `src/app/error.tsx` captures render failures; the next step is an error-tracking
-  vendor such as Sentry.
+- **Observability:** not wired to a vendor. The error boundary at
+  `src/app/error.tsx` captures render failures. Next steps are web-vitals/RUM
+  reporting and an error-tracking vendor such as Sentry.
 - **Resilience and hardening:** Zod validation at the data and SSE boundaries;
   explicit error/abstain states; AbortController cleanup; no HTML injection; strict
   TypeScript; deterministic formatters to avoid hydration drift.

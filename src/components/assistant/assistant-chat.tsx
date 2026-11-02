@@ -366,9 +366,7 @@ function AssistantMessage({ message, lookup }: { message: ChatMessage; lookup: C
   const isError = message.status === "error";
 
   return (
-    <article
-      className={cn("border-l-2 pl-4", isError ? "border-l-destructive" : "border-l-primary")}
-    >
+    <article className="border-t border-border/70 pt-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium">Meridian assistant</span>
         {isError ? (

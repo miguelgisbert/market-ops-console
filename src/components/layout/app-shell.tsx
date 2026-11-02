@@ -1,3 +1,4 @@
+import { Database } from "lucide-react";
 import Link from "next/link";
 import { dataset } from "@/lib/data";
 import { formatPeriodLabel } from "@/lib/format";
@@ -37,8 +38,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden items-center gap-1.5 border px-2 py-1 font-mono text-[10px] text-muted-foreground md:inline-flex">
-              <span aria-hidden="true" className="size-1.5 rounded-full bg-status-ontrack" />
-              Starter pack
+              <Database aria-hidden="true" className="size-3" />
+              Canonical data
             </span>
             <span className="border px-2 py-1 font-mono text-[10px] text-foreground">
               {formatPeriodLabel(latestPeriod)}
@@ -67,8 +68,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-1 px-4 py-4 font-mono text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <span>Meridian market operations console</span>
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-4 py-4 font-mono text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <span>
+            © 2026 MGO ·{" "}
+            <a
+              href="https://miguelgisbert.dev"
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              miguelgisbert.dev
+            </a>
+          </span>
           <span>
             Canonical dataset · {dataset.markets.length} markets · {dataset.products.length}{" "}
             products

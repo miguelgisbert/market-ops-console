@@ -223,3 +223,22 @@
   stroke: var(--ring);
   stroke-width: 2;
 }
+
+a,
+button,
+select,
+summary,
+[role="button"],
+[role="combobox"],
+[role="option"],
+[role="menuitem"],
+input[type="checkbox"],
+input[type="radio"],
+label[for] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}

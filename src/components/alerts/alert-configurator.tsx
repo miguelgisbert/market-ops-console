@@ -2,6 +2,7 @@
 
 import { CircleAlert, Plus, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { SelectField } from "@/components/form/select-field";
 import {
   type AlertDraft,
   type AlertMetric,
@@ -206,85 +207,62 @@ export function AlertConfigurator({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor={`${formId}-scope`} className="data-label mb-1 block">
-                Scope
-              </label>
-              <select
-                id={`${formId}-scope`}
-                value={draft.scope}
-                onChange={(event) => {
-                  update("scope", event.target.value as AlertScope);
-                  update("scopeId", undefined);
-                }}
-                className={inputClass}
-              >
-                <option value="portfolio">Portfolio</option>
-                <option value="region">Region</option>
-                <option value="market">Market</option>
-              </select>
-            </div>
+            <SelectField
+              id={`${formId}-scope`}
+              label="Scope"
+              value={draft.scope}
+              options={[
+                { value: "portfolio", label: "Portfolio" },
+                { value: "region", label: "Region" },
+                { value: "market", label: "Market" },
+              ]}
+              onValueChange={(value) => {
+                update("scope", value as AlertScope);
+                update("scopeId", undefined);
+              }}
+            />
 
             {draft.scope !== "portfolio" ? (
               <div>
-                <label htmlFor={`${formId}-scope-id`} className="data-label mb-1 block">
-                  {draft.scope === "region" ? "Region" : "Market"}
-                </label>
-                <select
+                <SelectField
                   id={`${formId}-scope-id`}
-                  value={draft.scopeId ?? ""}
-                  onChange={(event) => update("scopeId", event.target.value || undefined)}
-                  aria-invalid={errors.scopeId ? true : undefined}
-                  aria-describedby={errors.scopeId ? `${formId}-scope-error` : undefined}
-                  className={inputClass}
-                >
-                  <option value="">Select {draft.scope}</option>
-                  {(draft.scope === "region" ? regions : markets).map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
+                  label={draft.scope === "region" ? "Region" : "Market"}
+                  value={draft.scopeId}
+                  placeholder={`Select ${draft.scope}`}
+                  options={(draft.scope === "region" ? regions : markets).map((option) => ({
+                    value: option.id,
+                    label: option.name,
+                  }))}
+                  onValueChange={(value) => update("scopeId", value)}
+                  invalid={Boolean(errors.scopeId)}
+                  describedBy={errors.scopeId ? `${formId}-scope-error` : undefined}
+                />
                 <FieldError id={`${formId}-scope-error`}>{errors.scopeId}</FieldError>
               </div>
             ) : null}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <label htmlFor={`${formId}-metric`} className="data-label mb-1 block">
-                Metric
-              </label>
-              <select
-                id={`${formId}-metric`}
-                value={draft.metric}
-                onChange={(event) => update("metric", event.target.value as AlertMetric)}
-                className={inputClass}
-              >
-                {Object.entries(alertMetricLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor={`${formId}-operator`} className="data-label mb-1 block">
-                Condition
-              </label>
-              <select
-                id={`${formId}-operator`}
-                value={draft.operator}
-                onChange={(event) => update("operator", event.target.value as AlertOperator)}
-                className={inputClass}
-              >
-                {Object.entries(alertOperatorLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SelectField
+              id={`${formId}-metric`}
+              label="Metric"
+              value={draft.metric}
+              options={Object.entries(alertMetricLabels).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+              onValueChange={(value) => update("metric", value as AlertMetric)}
+            />
+            <SelectField
+              id={`${formId}-operator`}
+              label="Condition"
+              value={draft.operator}
+              options={Object.entries(alertOperatorLabels).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+              onValueChange={(value) => update("operator", value as AlertOperator)}
+            />
             <div>
               <label htmlFor={`${formId}-threshold`} className="data-label mb-1 block">
                 Threshold (%)
@@ -304,23 +282,16 @@ export function AlertConfigurator({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor={`${formId}-severity`} className="data-label mb-1 block">
-                Severity
-              </label>
-              <select
-                id={`${formId}-severity`}
-                value={draft.severity}
-                onChange={(event) => update("severity", event.target.value as AlertSeverity)}
-                className={inputClass}
-              >
-                {Object.entries(alertSeverityLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SelectField
+              id={`${formId}-severity`}
+              label="Severity"
+              value={draft.severity}
+              options={Object.entries(alertSeverityLabels).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+              onValueChange={(value) => update("severity", value as AlertSeverity)}
+            />
             <label className="flex items-start gap-2 self-end border px-3 py-2 text-xs">
               <input
                 type="checkbox"
