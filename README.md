@@ -7,6 +7,7 @@ using the provided starter pack.
 **Live:** [https://market-ops-console.vercel.app](https://market-ops-console.vercel.app)
 **Repo:** [https://github.com/miguelgisbert/market-ops-console](https://github.com/miguelgisbert/market-ops-console)
 **Storybook:** [https://market-ops-storybook.vercel.app](https://market-ops-storybook.vercel.app)
+**Walkthrough video:** [watch the 51-second captioned tour](https://market-ops-console.vercel.app/walkthrough.webm)
 **Requirements audit:** [docs/requirements-audit.md](docs/requirements-audit.md)
 
 **Stack:** Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS v4,

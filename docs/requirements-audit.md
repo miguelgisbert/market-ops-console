@@ -82,6 +82,7 @@ The brief marks all five as optional; all are implemented.
 - Live deployment: public, no authentication wall, no console errors observed on
   overview and analyst routes.
 - English-only UI and code strings checked; no Valencian/Catalan copy remains.
+- Walkthrough video recorded against the live deployment: `public/walkthrough.webm`.
 
 ## Efficiency checks
 
