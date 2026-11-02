@@ -460,19 +460,17 @@ function AssistantMessage({ message, lookup }: { message: ChatMessage; lookup: C
                 {citation.href ? (
                   <Link
                     href={citation.href}
+                    title={citation.secondary || undefined}
                     className="inline-flex items-center gap-1 border bg-background px-1.5 py-1 font-mono text-[10px] text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {citation.label}
-                    {citation.secondary ? (
-                      <span className="text-muted-foreground">· {citation.secondary}</span>
-                    ) : null}
+                    {citation.hasExplicitLabel ? citation.label : citation.secondary}
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 border bg-background px-1.5 py-1 font-mono text-[10px] text-foreground">
-                    {citation.label}
-                    {citation.secondary ? (
-                      <span className="text-muted-foreground">· {citation.secondary}</span>
-                    ) : null}
+                  <span
+                    title={citation.secondary || undefined}
+                    className="inline-flex items-center gap-1 border bg-background px-1.5 py-1 font-mono text-[10px] text-foreground"
+                  >
+                    {citation.hasExplicitLabel ? citation.label : citation.secondary}
                   </span>
                 )}
               </li>
