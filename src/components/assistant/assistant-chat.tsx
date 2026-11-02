@@ -368,7 +368,7 @@ function AssistantMessage({ message, lookup }: { message: ChatMessage; lookup: C
   return (
     <article className="border-t border-border/70 pt-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium">Meridian assistant</span>
+        <span className="text-xs font-medium">Market Ops assistant</span>
         {isError ? (
           <span className="inline-flex items-center gap-1 border border-destructive/35 bg-destructive/5 px-1.5 py-0.5 font-mono text-[10px] text-destructive">
             <CircleAlert aria-hidden="true" className="size-2.5" />

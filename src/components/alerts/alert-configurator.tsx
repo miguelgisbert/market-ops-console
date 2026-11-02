@@ -21,7 +21,7 @@ import {
 import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "meridian:alert-rules";
+const STORAGE_KEY = "market-ops:alert-rules";
 
 export type AlertMarketOption = {
   id: string;

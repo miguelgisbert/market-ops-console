@@ -56,3 +56,6 @@ frontend-assignment-starter-pack/
 
 # LibreOffice lock files
 .~lock*
+
+# Local agent tooling
+.codex/

@@ -1,10 +1,11 @@
-# Meridian — Market operations console
+# Market Ops — Market operations console
 
 A front-end for a commercial operations team that reads portfolio performance and
 asks questions about it. Built for the Front-End Engineer take-home assignment
 using the provided starter pack.
 
-**Live:** [https://meridian-market-ops.vercel.app](https://meridian-market-ops.vercel.app)
+**Live:** [https://market-ops-console.vercel.app](https://market-ops-console.vercel.app)
+**Repo:** [https://github.com/miguelgisbert/market-ops-console](https://github.com/miguelgisbert/market-ops-console)
 
 **Stack:** Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS v4,
 shadcn/ui, Zod, Recharts, Biome, Vitest and Playwright.

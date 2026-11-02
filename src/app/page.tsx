@@ -17,8 +17,8 @@ import { formatCurrency, formatPercent, formatPeriodLabel } from "@/lib/format";
 
 export default function OverviewPage() {
   const markets = getMarketSummaries(dataIndex);
-  const portfolio = getPortfolioSummary(dataIndex);
-  const movers = getTopMovers(dataIndex, { limit: 3 });
+  const portfolio = getPortfolioSummary(dataIndex, { markets });
+  const movers = getTopMovers(dataIndex, { limit: 3, markets });
   const periodLabel = formatPeriodLabel(portfolio.latestPeriod);
 
   const attention: AttentionItem[] = markets

@@ -43,10 +43,6 @@ export function formatCurrency(
   return fullCurrency.format(value);
 }
 
-export function formatCompactNumber(value: number): string {
-  return compact(Math.abs(value));
-}
-
 export function formatPercent(
   value: number,
   options: { signed?: boolean; digits?: number } = {},
@@ -57,21 +53,25 @@ export function formatPercent(
   return `${value > 0 ? "+" : "−"}${formatted}`;
 }
 
+const periodLabelFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+const periodShortFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  timeZone: "UTC",
+});
+
 export function formatPeriodLabel(period: string): string {
   const [year, month] = period.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, month - 1, 1)));
+  return periodLabelFormatter.format(new Date(Date.UTC(year, month - 1, 1)));
 }
 
 export function formatPeriodShort(period: string): string {
   const [, month] = period.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(2026, month - 1, 1)));
+  return periodShortFormatter.format(new Date(Date.UTC(2026, month - 1, 1)));
 }
 
 export function formatPeriodAxis(period: string): string {

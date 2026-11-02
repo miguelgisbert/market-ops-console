@@ -20,14 +20,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             <span
               aria-hidden="true"
-              className="grid size-8 place-items-center rounded-sm bg-primary font-mono text-sm font-semibold text-primary-foreground"
+              className="grid size-8 place-items-center rounded-sm bg-primary font-mono text-[10px] font-semibold tracking-[-0.04em] text-primary-foreground"
             >
-              M
+              MO
             </span>
             <span className="leading-none">
-              <span className="block text-[15px] font-semibold tracking-[-0.01em]">Meridian</span>
+              <span className="block text-[15px] font-semibold tracking-[-0.01em]">Market Ops</span>
               <span className="mt-1 block font-mono text-[10px] text-muted-foreground">
-                Market operations
+                Operations console
               </span>
             </span>
           </Link>

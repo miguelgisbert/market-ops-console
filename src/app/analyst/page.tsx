@@ -68,7 +68,7 @@ async function AnalystContent({
   const selectedMarket = marketRecord
     ? markets.find((market) => market.id === marketRecord.id)
     : undefined;
-  const regions = getRegionSummaries(dataIndex, { period, productId });
+  const regions = getRegionSummaries(dataIndex, { period, productId, markets });
   const selectedRegion = regionId ? dataIndex.regionsById.get(regionId) : undefined;
   const products = getProductSummaries(dataIndex, {
     period,
@@ -304,7 +304,7 @@ async function AnalystContent({
         description="Markets × periods. Signed variance against forecast; select a cell to focus the other views."
       >
         <VarianceHeatmap
-          rows={getHeatmapData(dataIndex, { regionId, productId })}
+          rows={getHeatmapData(dataIndex, { regionId, productId, markets })}
           periods={dataset.meta.periods}
           selectedPeriod={period}
           selectedMarketId={selectedMarket?.id}

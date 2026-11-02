@@ -17,8 +17,8 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Meridian — Market operations",
-    template: "%s — Meridian",
+    default: "Market Ops — Market operations console",
+    template: "%s — Market Ops",
   },
   description: "Market operations console for portfolio performance, forecast attainment and risk.",
 };

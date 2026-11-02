@@ -285,13 +285,15 @@ export function getMarketSummaries(
 
 export function getRegionSummaries(
   index: DataIndex,
-  params: { period?: string; productId?: string } = {},
+  params: { period?: string; productId?: string; markets?: MarketSummary[] } = {},
 ): RegionSummary[] {
   const period = resolvePeriod(index, params.period);
-  const markets = getMarketSummaries(index, {
-    period,
-    productId: params.productId,
-  });
+  const markets =
+    params.markets ??
+    getMarketSummaries(index, {
+      period,
+      productId: params.productId,
+    });
 
   return index.dataset.regions.map((region) => {
     const scope: DataScope = { regionId: region.id, productId: params.productId };
@@ -346,16 +348,18 @@ export function getProductSummaries(
 
 export function getPortfolioSummary(
   index: DataIndex,
-  params: { period?: string; productId?: string } = {},
+  params: { period?: string; productId?: string; markets?: MarketSummary[] } = {},
 ): PortfolioSummary {
   const period = resolvePeriod(index, params.period);
   const scope: DataScope = { productId: params.productId };
   const series = getSeriesForScope(index, scope);
   const kpis = getKpisForScope(index, scope, period);
-  const markets = getMarketSummaries(index, {
-    period,
-    productId: params.productId,
-  });
+  const markets =
+    params.markets ??
+    getMarketSummaries(index, {
+      period,
+      productId: params.productId,
+    });
 
   return {
     revenue: kpis.revenue,
@@ -373,10 +377,16 @@ export function getPortfolioSummary(
 
 export function getTopMovers(
   index: DataIndex,
-  params: { period?: string; regionId?: string; productId?: string; limit?: number } = {},
+  params: {
+    period?: string;
+    regionId?: string;
+    productId?: string;
+    limit?: number;
+    markets?: MarketSummary[];
+  } = {},
 ): TopMovers {
   const limit = params.limit ?? 3;
-  const markets = getMarketSummaries(index, params);
+  const markets = params.markets ?? getMarketSummaries(index, params);
   return {
     gainers: markets
       .filter((market) => market.growthPct > 0)
@@ -391,9 +401,9 @@ export function getTopMovers(
 
 export function getHeatmapData(
   index: DataIndex,
-  params: { regionId?: string; productId?: string } = {},
+  params: { regionId?: string; productId?: string; markets?: MarketSummary[] } = {},
 ): HeatmapRow[] {
-  const markets = getMarketSummaries(index, params);
+  const markets = params.markets ?? getMarketSummaries(index, params);
 
   return markets.map((market) => ({
     marketId: market.id,
