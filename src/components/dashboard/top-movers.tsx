@@ -13,7 +13,7 @@ export function TopMovers({
   period: string;
 }) {
   return (
-    <section aria-labelledby="top-movers-heading" className="border bg-card">
+    <section aria-labelledby="top-movers-heading" className="min-w-0 border bg-card">
       <div className="border-b px-4 py-3">
         <h2 id="top-movers-heading" className="text-sm font-semibold">
           Top movers

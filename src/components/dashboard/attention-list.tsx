@@ -15,7 +15,7 @@ export type AttentionItem = {
 
 export function AttentionList({ items }: { items: AttentionItem[] }) {
   return (
-    <section aria-labelledby="attention-heading" className="border bg-card">
+    <section aria-labelledby="attention-heading" className="min-w-0 border bg-card">
       <div className="border-b px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <h2 id="attention-heading" className="text-sm font-semibold">

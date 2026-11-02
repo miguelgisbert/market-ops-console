@@ -14,7 +14,7 @@ export function ChartPanel({
   className?: string;
 }) {
   return (
-    <section aria-labelledby={id} className={`border bg-card ${className ?? ""}`}>
+    <section aria-labelledby={id} className={`min-w-0 border bg-card ${className ?? ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-2 border-b px-4 py-3">
         <div>
           <h2 id={id} className="text-sm font-semibold">

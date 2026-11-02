@@ -22,7 +22,7 @@ export function MarketTable({
   baseParams?: Record<string, string | undefined>;
 }) {
   return (
-    <section aria-labelledby="market-table-heading" className="border bg-card">
+    <section aria-labelledby="market-table-heading" className="min-w-0 border bg-card">
       <div className="flex flex-wrap items-end justify-between gap-2 border-b px-4 py-3">
         <div>
           <h2 id="market-table-heading" className="text-sm font-semibold">

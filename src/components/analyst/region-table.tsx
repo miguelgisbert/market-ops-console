@@ -21,7 +21,7 @@ export function RegionTable({
   baseParams?: Record<string, string | undefined>;
 }) {
   return (
-    <section aria-labelledby="region-table-heading" className="border bg-card">
+    <section aria-labelledby="region-table-heading" className="min-w-0 border bg-card">
       <div className="border-b px-4 py-3">
         <h2 id="region-table-heading" className="text-sm font-semibold">
           Regional performance

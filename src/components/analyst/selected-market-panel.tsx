@@ -27,7 +27,7 @@ export function SelectedMarketPanel({
   const anomaly = market.anomalies[market.anomalies.length - 1];
 
   return (
-    <section aria-labelledby="selected-market-heading" className="border bg-card">
+    <section aria-labelledby="selected-market-heading" className="min-w-0 border bg-card">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b px-4 py-4">
         <div>
           <p className="data-label">Selected market{productName ? ` · ${productName}` : ""}</p>

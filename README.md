@@ -6,6 +6,7 @@ using the provided starter pack.
 
 **Live:** [https://market-ops-console.vercel.app](https://market-ops-console.vercel.app)
 **Repo:** [https://github.com/miguelgisbert/market-ops-console](https://github.com/miguelgisbert/market-ops-console)
+**Requirements audit:** [docs/requirements-audit.md](docs/requirements-audit.md)
 
 **Stack:** Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS v4,
 shadcn/ui, Zod, Recharts, Biome, Vitest and Playwright.
@@ -264,8 +265,9 @@ Covered:
 - Citation resolution: explicit labels, dataset-ID fallback and generated URLs.
 - `StatusBadge`: every status renders text, not just colour.
 - Alert configurator: schema rejection, optimistic save and rollback on forced failure.
-- Playwright: overview → market drill-down → assistant citation; alert save and
-  forced rollback.
+- Playwright (5 paths): overview → market drill-down → assistant citation; alert
+  save and forced rollback; shareable drill path with back/forward; assistant
+  abstention and error states; mobile width without horizontal overflow.
 - Build, typecheck, lint and `npm audit` are clean.
 
 Deliberately skipped for time: visual regression tests, full keyboard traversal E2E

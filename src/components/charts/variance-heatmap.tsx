@@ -82,7 +82,7 @@ export function VarianceHeatmap({
 
   return (
     <div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto [contain:layout]">
         <table className="min-w-[980px] w-full border-separate border-spacing-0 text-xs">
           <caption className="sr-only">
             Forecast variance heat map by market and period. Each cell shows the signed percentage

@@ -43,3 +43,43 @@ test("saves an alert optimistically and rolls back a forced failure", async ({ p
   ).toBeVisible();
   await expect(page.getByText("Rollback rule")).toHaveCount(0);
 });
+
+test("keeps the drill path shareable and supports back/forward", async ({ page }) => {
+  await page.goto("/analyst");
+  await page.locator('a[aria-label^="Germany:"]').click();
+
+  await expect(page).toHaveURL(/market=de/);
+  await expect(page.getByRole("heading", { name: "Germany", level: 1 })).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/analyst$/);
+  await expect(page.getByRole("heading", { name: "Portfolio", level: 1 })).toBeVisible();
+
+  await page.goForward();
+  await expect(page).toHaveURL(/market=de/);
+});
+
+test("handles assistant abstention and error states", async ({ page }) => {
+  await page.goto("/assistant");
+
+  await page.getByLabel("Ask a question about the portfolio").fill("What will sales be next year?");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect(page.getByText("Outside the dataset. No answer was invented.")).toBeVisible();
+
+  await page.getByLabel("Ask a question about the portfolio").fill("force error");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect(page.getByText(/Simulated upstream failure/)).toBeVisible();
+  await expect(page.getByText("Assistant error")).toBeVisible();
+});
+
+test("stays within the mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const path of ["/", "/analyst", "/assistant", "/alerts"]) {
+    await page.goto(path);
+    const overflows = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    );
+    expect(overflows, path).toBe(false);
+  }
+});

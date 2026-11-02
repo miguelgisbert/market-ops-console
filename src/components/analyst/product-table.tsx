@@ -22,7 +22,7 @@ export function ProductTable({
   baseParams?: Record<string, string | undefined>;
 }) {
   return (
-    <section aria-labelledby="product-table-heading" className="border bg-card">
+    <section aria-labelledby="product-table-heading" className="min-w-0 border bg-card">
       <div className="border-b px-4 py-3">
         <h2 id="product-table-heading" className="text-sm font-semibold">
           Product contribution
