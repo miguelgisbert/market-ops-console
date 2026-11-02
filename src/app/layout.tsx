@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${bricolage.variable} ${plexMono.variable}`}>
-      <body>
+      <body suppressHydrationWarning>
         <TooltipProvider>
           <AppShell>{children}</AppShell>
         </TooltipProvider>
