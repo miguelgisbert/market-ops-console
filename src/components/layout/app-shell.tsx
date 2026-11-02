@@ -1,5 +1,6 @@
 import { Database } from "lucide-react";
 import Link from "next/link";
+import { CommandPalette } from "@/components/command-palette";
 import { dataset } from "@/lib/data";
 import { formatPeriodLabel } from "@/lib/format";
 import { AppNav } from "./app-nav";
@@ -37,6 +38,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <CommandPalette
+              markets={dataset.markets.map((market) => ({
+                id: market.id,
+                name: market.name,
+                iso2: market.iso2,
+              }))}
+              products={dataset.products}
+            />
             <span className="hidden items-center gap-1.5 border px-2 py-1 font-mono text-[10px] text-muted-foreground md:inline-flex">
               <Database aria-hidden="true" className="size-3" />
               Canonical data

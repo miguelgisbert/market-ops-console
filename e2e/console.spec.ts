@@ -83,3 +83,45 @@ test("stays within the mobile viewport", async ({ page }) => {
     expect(overflows, path).toBe(false);
   }
 });
+
+test("opens the command palette and jumps to a market", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("Control+k");
+  await expect(page.getByRole("dialog", { name: "Command palette" })).toBeVisible();
+
+  await page.getByPlaceholder("Jump to a market, product or page…").fill("Germany");
+  await page.getByRole("option", { name: /Germany/ }).click();
+  await expect(page).toHaveURL(/market=de/);
+  await expect(page.getByRole("heading", { name: "Germany", level: 1 })).toBeVisible();
+});
+
+test("streams live updates without losing the selected scope", async ({ page }) => {
+  await page.goto("/analyst?region=eu&market=de&period=2026-05");
+  await page.getByRole("button", { name: "Go live" }).click();
+
+  await expect(page).toHaveURL(/live=1&tick=1/);
+  await expect(page).toHaveURL(/tick=2/, { timeout: 10_000 });
+  await expect(page.getByRole("heading", { name: "Germany", level: 1 })).toBeVisible();
+  await expect(page.getByText("Live ·", { exact: false })).toBeVisible();
+});
+
+test("carries the dashboard scope into the assistant", async ({ page }) => {
+  await page.goto("/analyst?region=eu&market=de&period=2026-05");
+  await page.getByRole("link", { name: "Ask about this view" }).click();
+
+  await expect(page).toHaveURL(/assistant\?region=eu&market=de&period=2026-05/);
+  await expect(page.getByText("Dashboard context")).toBeVisible();
+  await expect(page.getByText("Germany · May 2026")).toBeVisible();
+
+  await page.getByRole("button", { name: "What is driving this view?" }).click();
+  await expect(page.getByText(/Germany's revenue fell in early 2026/)).toBeVisible({
+    timeout: 10_000,
+  });
+});
+
+test("virtualises the full fact table", async ({ page }) => {
+  await page.goto("/analyst");
+  const table = page.getByRole("table", { name: /Virtualised fact table/ });
+  await expect(table).toHaveAttribute("aria-rowcount", "1561");
+  await expect(page.getByText(/^Mounted /)).toBeVisible();
+});

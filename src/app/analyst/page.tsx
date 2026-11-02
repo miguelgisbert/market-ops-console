@@ -1,9 +1,10 @@
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ProductTable } from "@/components/analyst/product-table";
 import { RegionTable } from "@/components/analyst/region-table";
 import { SelectedMarketPanel } from "@/components/analyst/selected-market-panel";
+import { VirtualizedFactTable } from "@/components/analyst/virtualized-fact-table";
 import { ChartPanel } from "@/components/charts/chart-panel";
 import { ChoroplethMap } from "@/components/charts/choropleth-map";
 import { RadarComparison } from "@/components/charts/radar-comparison";
@@ -11,10 +12,17 @@ import { TimeSeriesChart } from "@/components/charts/time-series-chart";
 import { VarianceHeatmap } from "@/components/charts/variance-heatmap";
 import { ComparePicker } from "@/components/dashboard/compare-picker";
 import { KpiBand, type KpiMetric } from "@/components/dashboard/kpi-band";
+import { LiveModeControl } from "@/components/dashboard/live-mode-control";
 import { MarketTable } from "@/components/dashboard/market-table";
 import { ScopeControls } from "@/components/dashboard/scope-controls";
-import { type MapMetric, mapMetricLabels, mapMetricSchema } from "@/lib/dashboard/config";
 import {
+  type MapMetric,
+  mapMetricLabels,
+  mapMetricSchema,
+  parseLiveTick,
+} from "@/lib/dashboard/config";
+import {
+  createLiveDataIndex,
   type DataScope,
   dataIndex,
   dataset,
@@ -47,43 +55,45 @@ async function AnalystContent({
   searchParams: PageProps<"/analyst">["searchParams"];
 }) {
   const params = await searchParams;
+  const tick = parseLiveTick(params);
+  const index = tick === null ? dataIndex : createLiveDataIndex(dataset, tick);
   const period = resolvePeriod(
-    dataIndex,
+    index,
     typeof params.period === "string" ? params.period : undefined,
   );
   const marketParam = typeof params.market === "string" ? params.market : undefined;
-  const marketRecord = marketParam ? dataIndex.marketsById.get(marketParam) : undefined;
+  const marketRecord = marketParam ? index.marketsById.get(marketParam) : undefined;
   const regionParam = typeof params.region === "string" ? params.region : undefined;
   const regionId =
     marketRecord?.regionId ??
-    (regionParam && dataIndex.regionsById.has(regionParam) ? regionParam : undefined);
+    (regionParam && index.regionsById.has(regionParam) ? regionParam : undefined);
   const productId =
-    typeof params.product === "string" && dataIndex.productsById.has(params.product)
+    typeof params.product === "string" && index.productsById.has(params.product)
       ? params.product
       : undefined;
   const parsedMetric = mapMetricSchema.safeParse(params.metric);
   const metric: MapMetric = parsedMetric.success ? parsedMetric.data : "growthPct";
 
-  const markets = getMarketSummaries(dataIndex, { period, regionId, productId });
+  const markets = getMarketSummaries(index, { period, regionId, productId });
   const selectedMarket = marketRecord
     ? markets.find((market) => market.id === marketRecord.id)
     : undefined;
-  const regions = getRegionSummaries(dataIndex, { period, productId, markets });
-  const selectedRegion = regionId ? dataIndex.regionsById.get(regionId) : undefined;
-  const products = getProductSummaries(dataIndex, {
+  const regions = getRegionSummaries(index, { period, productId, markets });
+  const selectedRegion = regionId ? index.regionsById.get(regionId) : undefined;
+  const products = getProductSummaries(index, {
     period,
     regionId,
     marketId: selectedMarket?.id,
   });
-  const selectedProduct = productId ? dataIndex.productsById.get(productId) : undefined;
+  const selectedProduct = productId ? index.productsById.get(productId) : undefined;
 
   const scope: DataScope = {
     regionId,
     marketId: selectedMarket?.id,
     productId,
   };
-  const scopeKpis = getKpisForScope(dataIndex, scope, period);
-  const scopeSeries = getSeriesForScope(dataIndex, scope);
+  const scopeKpis = getKpisForScope(index, scope, period);
+  const scopeSeries = getSeriesForScope(index, scope);
   const scopeName = buildScopeName(
     selectedMarket?.name ?? selectedRegion?.name,
     selectedProduct?.name,
@@ -91,22 +101,24 @@ async function AnalystContent({
   const periodLabel = formatPeriodLabel(period);
 
   const compareRaw = typeof params.compare === "string" ? params.compare : "";
-  const allMarkets = getMarketSummaries(dataIndex, { period });
+  const allMarkets = getMarketSummaries(index, { period });
   const defaultCompare = defaultCompareIds(allMarkets);
   const compareIds = (
     compareRaw
       ? compareRaw
           .split(",")
-          .filter((id) => dataIndex.marketsById.has(id))
+          .filter((id) => index.marketsById.has(id))
           .slice(0, 5)
       : defaultCompare
   ).filter((id, index, list) => list.indexOf(id) === index);
   const radarEntities = getRadarComparison(
-    dataIndex,
+    index,
     compareIds.map((id) => ({ kind: "market" as const, id })),
     period,
   );
 
+  const liveParam = tick === null ? undefined : "1";
+  const tickParam = tick === null ? undefined : String(tick);
   const baseParams: Record<string, string | undefined> = {
     region: regionId,
     market: selectedMarket?.id,
@@ -114,6 +126,8 @@ async function AnalystContent({
     period,
     metric,
     compare: compareRaw || undefined,
+    live: liveParam,
+    tick: tickParam,
   };
   const chartParams: Record<string, string | undefined> = {
     region: regionId,
@@ -121,7 +135,26 @@ async function AnalystContent({
     period,
     metric,
     compare: compareRaw || undefined,
+    live: liveParam,
+    tick: tickParam,
   };
+  const askParams = new URLSearchParams();
+  if (regionId) askParams.set("region", regionId);
+  if (selectedMarket?.id) askParams.set("market", selectedMarket.id);
+  if (productId) askParams.set("product", productId);
+  askParams.set("period", period);
+  const askHref = `/assistant?${askParams.toString()}`;
+
+  const liveBaseQuery = new URLSearchParams(
+    Object.entries({
+      region: regionId,
+      market: selectedMarket?.id,
+      product: productId,
+      period,
+      metric,
+      compare: compareRaw || undefined,
+    }).filter((entry): entry is [string, string] => Boolean(entry[1])),
+  ).toString();
 
   const marketsAtRisk = markets.filter((market) => market.status !== "on_track").length;
   const metrics: KpiMetric[] = [
@@ -197,21 +230,36 @@ async function AnalystContent({
               : "Full metrics, product contribution and every market in the portfolio."}
           </p>
         </div>
-        <div className="flex shrink-0 items-stretch border bg-card">
+        <div className="flex shrink-0 flex-wrap items-stretch gap-2">
           <Link
-            href="/"
-            className="flex items-center gap-1.5 border-r px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            href={askHref}
+            className="inline-flex h-9 items-center gap-1.5 border bg-card px-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <ArrowLeft aria-hidden="true" className="size-3" />
-            Executive view
+            <Sparkles aria-hidden="true" className="size-3" />
+            Ask about this view
           </Link>
-          <span
-            aria-current="page"
-            className="flex items-center gap-1.5 bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
-          >
-            Analyst view
-            <ArrowUpRight aria-hidden="true" className="size-3" />
-          </span>
+          <LiveModeControl
+            path="/analyst"
+            baseQuery={liveBaseQuery}
+            live={tick !== null}
+            tick={tick ?? 0}
+          />
+          <div className="flex items-stretch border bg-card">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 border-r px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ArrowLeft aria-hidden="true" className="size-3" />
+              Executive view
+            </Link>
+            <span
+              aria-current="page"
+              className="flex items-center gap-1.5 bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
+            >
+              Analyst view
+              <ArrowUpRight aria-hidden="true" className="size-3" />
+            </span>
+          </div>
         </div>
       </header>
 
@@ -231,10 +279,12 @@ async function AnalystContent({
           period,
           metric,
           compare: compareRaw || undefined,
+          live: liveParam,
+          tick: tickParam,
         }}
       />
 
-      <KpiBand metrics={metrics} />
+      <KpiBand metrics={metrics} liveKey={tick ?? undefined} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,1fr)]">
         <ChartPanel
@@ -304,13 +354,20 @@ async function AnalystContent({
         description="Markets × periods. Signed variance against forecast; select a cell to focus the other views."
       >
         <VarianceHeatmap
-          rows={getHeatmapData(dataIndex, { regionId, productId, markets })}
+          rows={getHeatmapData(index, { regionId, productId, markets })}
           periods={dataset.meta.periods}
           selectedPeriod={period}
           selectedMarketId={selectedMarket?.id}
           baseParams={chartParams}
         />
       </ChartPanel>
+
+      <VirtualizedFactTable
+        regionId={regionId}
+        marketId={selectedMarket?.id}
+        productId={productId}
+        tick={tickParam}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <RegionTable regions={regions} selectedRegionId={regionId} baseParams={chartParams} />

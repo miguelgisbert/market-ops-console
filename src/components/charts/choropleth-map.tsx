@@ -3,6 +3,7 @@
 import worldMapJson from "@/data/world-map.json";
 import type { MapMetric } from "@/lib/dashboard/config";
 import { mapMetricLabels } from "@/lib/dashboard/config";
+import { buildAnalystHref } from "@/lib/dashboard/url";
 import type { MarketStatus } from "@/lib/data/schema";
 import { formatCurrency, formatPercent, statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -188,17 +189,6 @@ export function ChoroplethMap({
   const labelScale = Math.max(0.25, viewBox.width / world.width);
   const labelSize = Math.min(8, Math.max(3.2, viewBox.width * 0.012));
 
-  function hrefForMarket(market: MapMarket): string {
-    const params = new URLSearchParams();
-    if (baseParams.product) params.set("product", baseParams.product);
-    if (baseParams.period) params.set("period", baseParams.period);
-    if (baseParams.metric) params.set("metric", baseParams.metric);
-    if (baseParams.compare) params.set("compare", baseParams.compare);
-    params.set("region", market.regionId);
-    params.set("market", market.id);
-    return `/analyst?${params.toString()}`;
-  }
-
   return (
     <div>
       <figure className="relative overflow-hidden border bg-background">
@@ -228,7 +218,10 @@ export function ChoroplethMap({
             return (
               <g key={market.id}>
                 <a
-                  href={hrefForMarket(market)}
+                  href={buildAnalystHref(baseParams, {
+                    region: market.regionId,
+                    market: market.id,
+                  })}
                   aria-current={selected ? "page" : undefined}
                   aria-label={`${market.name}: ${mapMetricLabels[metric]} ${formatMetric(metric, value)}. Open market.`}
                   className="map-market cursor-pointer focus-visible:outline-none"

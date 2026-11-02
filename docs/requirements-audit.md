@@ -7,7 +7,7 @@ Last verified: 2 November 2026
 Live: https://market-ops-console.vercel.app  
 Local: http://localhost:3000  
 Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`,
-`npm run build`, `npm audit` (0 vulnerabilities).
+`npm run build`, `npm run build-storybook`, `npm audit` (0 vulnerabilities).
 
 ## Mandatory requirements
 
@@ -55,29 +55,27 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`,
 
 ## Optional stretch goals
 
-The brief marks all five as optional and explicitly says none are required.
+The brief marks all five as optional; all are implemented.
 
-| Optional item                        | Status          | Note                                                                              |
-| ------------------------------------ | --------------- | --------------------------------------------------------------------------------- |
-| Live mode with timer/stream updates  | Not implemented | Would require a client-side live data layer that preserves the current scope      |
-| Virtualised dense analyst table      | Not implemented | Current dataset is 1,560 fact rows; tables are dense but not virtualised          |
-| Assistant aware of dashboard context | Not implemented | The assistant is fixture-driven; context hand-off would be the next layer         |
-| Command palette (cmd-K)              | Not implemented | Market/product navigation is available through the map, tables and scope controls |
-| Storybook stories                    | Not implemented | Components are covered by unit and E2E tests instead                              |
-
-These gaps do not violate the mandatory brief. If required, they are the next
-engineering additions.
+| Optional item                        | Status | Evidence                                                                                                                           |
+| ------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Live mode with timer/stream updates  | Done   | `live=1&tick=n` URL state, deterministic server-derived index, six-second refresh, selection preserved, reduced-motion aware flash |
+| Virtualised dense analyst table      | Done   | TanStack Virtual, `/api/facts`, 1,560 rows, ~24 mounted rows, native table semantics                                               |
+| Assistant aware of dashboard context | Done   | “Ask about this view” passes region/market/product/period to the assistant; context banner and prompt prefix                       |
+| Command palette (cmd-K)              | Done   | Radix Dialog + cmdk, pages/markets/products, keyboard navigation                                                                   |
+| Storybook stories                    | Done   | Five stories under `src/stories`, a11y addon, `build-storybook` in CI                                                              |
 
 ## Functional checks
 
-- Production build: successful; `/`, `/alerts`, `/assistant` static, `/analyst`
-  partial prerender, `/api/chat` dynamic.
+- Production build: successful; `/alerts` static, `/`, `/analyst` and `/assistant`
+  partial prerender, `/api/chat` and `/api/facts` dynamic.
 - SSE API: returns `token` events and a final `done` event; fixture error returns an
   `error` event.
 - Assistant: normal, low-confidence, abstain, error and long-response states tested.
 - Dashboard: map drill-down, heat-map cell keyboard selection, period changes,
-  back/forward and mobile widths tested.
+  back/forward, mobile widths, live ticks and virtualised row count tested.
 - Form: schema rejection, optimistic success and forced rollback tested.
+- Assistant context, command palette navigation and Storybook build tested.
 - Live deployment: public, no authentication wall, no console errors observed on
   overview and analyst routes.
 - English-only UI and code strings checked; no Valencian/Catalan copy remains.
@@ -94,3 +92,6 @@ engineering additions.
 - Chart animations are disabled; streaming updates are token-sized and abortable.
 - Horizontal mobile overflow is contained at the scroll container; E2E regression
   test added.
+- Virtualised table renders only visible rows; live simulation updates via the URL
+  tick without mutating canonical data; command palette and context lookup stay
+  client-light.

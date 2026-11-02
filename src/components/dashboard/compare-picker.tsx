@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { buildAnalystHref } from "@/lib/dashboard/url";
 import type { MarketStatus } from "@/lib/data/schema";
 import { statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -26,15 +27,13 @@ export function ComparePicker({
   const [pending, startTransition] = useTransition();
 
   function update(next: string[]) {
-    const params = new URLSearchParams();
-    if (baseParams.region) params.set("region", baseParams.region);
-    if (baseParams.market) params.set("market", baseParams.market);
-    if (baseParams.product) params.set("product", baseParams.product);
-    if (baseParams.period) params.set("period", baseParams.period);
-    if (baseParams.metric) params.set("metric", baseParams.metric);
-    if (next.length > 0) params.set("compare", next.join(","));
     startTransition(() => {
-      router.push(`/analyst?${params.toString()}`, { scroll: false });
+      router.push(
+        buildAnalystHref(baseParams, {
+          compare: next.length > 0 ? next.join(",") : undefined,
+        }),
+        { scroll: false },
+      );
     });
   }
 

@@ -9,7 +9,8 @@ using the provided starter pack.
 **Requirements audit:** [docs/requirements-audit.md](docs/requirements-audit.md)
 
 **Stack:** Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS v4,
-shadcn/ui, Zod, Recharts, Biome, Vitest and Playwright.
+shadcn/ui, Zod, Recharts, TanStack Virtual, cmdk, Storybook, Biome, Vitest and
+Playwright.
 
 ## Quick setup
 
@@ -26,6 +27,8 @@ npm run typecheck   # next typegen + tsc --noEmit
 npm test            # Vitest unit/component tests
 npm run test:e2e    # Playwright happy paths (Chrome)
 npm run build       # production build
+npm run storybook   # Storybook on http://localhost:6006
+npm run build-storybook
 npm audit           # 0 vulnerabilities
 ```
 
@@ -37,6 +40,8 @@ npm audit           # 0 vulnerabilities
 - Portfolio totals, trend against forecast, top movers and markets at risk.
 - Dense market table with revenue, growth, share, attainment and status.
 - "Needs attention" panel driven by the dataset's statuses and anomaly markers.
+- Live mode: simulated server-derived updates every six seconds, with the selected
+  URL scope preserved.
 
 ### Analyst workspace (`/analyst`)
 
@@ -49,6 +54,9 @@ npm audit           # 0 vulnerabilities
 - Forecast-variance heat map (markets × periods), keyboard-navigable with roving
   tab focus; selecting a cell updates the rest of the dashboard.
 - Region, product, period and comparison controls, all reflected in the URL.
+- Virtualised fact table: 1,560 market × product × period rows, with only visible rows
+  mounted.
+- Live mode and "Ask about this view" context hand-off to the assistant.
 - Accessible data tables behind every visualisation.
 
 ### Assistant (`/assistant`)
@@ -59,6 +67,20 @@ npm audit           # 0 vulnerabilities
 - Confidence cues, explicit abstention, error state and long-response handling.
 - AI-generated narrative is visually and structurally separate from authoritative
   source data.
+- Dashboard context hand-off: the analyst view sends region, market, product and
+  period into the assistant, which prefixes the question sent to the fixture backend.
+
+### Command palette (`Ctrl/Cmd + K`)
+
+- Global search for pages, markets and products.
+- Radix Dialog + cmdk keyboard navigation and `aria-activedescendant` handling.
+- Selecting a market or product navigates directly to the analyst scope.
+
+### Storybook
+
+- Stories for StatusBadge, KpiBand, MarketTape, AlertConfigurator and TimeSeriesChart.
+- Accessibility addon enabled.
+- `npm run storybook` / `npm run build-storybook`.
 
 ### Alerts (`/alerts`)
 
@@ -76,6 +98,14 @@ npm audit           # 0 vulnerabilities
 ### Analyst workspace
 
 ![Analyst map and radar](docs/screenshots/analyst.png)
+
+### Command palette
+
+![Command palette](docs/screenshots/command-palette.png)
+
+### Virtualised fact table
+
+![Virtualised fact table](docs/screenshots/analyst-facts.png)
 
 ### Time series and heat map
 
@@ -112,49 +142,61 @@ module load, including every series row's market, product and period reference.
 ```text
 Browser
 ├── Server Components
-│   ├── overview page          reads DataIndex, renders static dashboard
-│   ├── analyst page           awaits searchParams, renders scope + charts
-│   └── app shell              dataset metadata, navigation
+│   ├── overview page          DataIndex + optional live tick
+│   ├── analyst page           DataIndex + URL scope + optional live tick
+│   ├── assistant page         citation lookup + dashboard context
+│   └── app shell              dataset metadata, navigation, command trigger
 ├── Client islands
 │   ├── charts                 Recharts radar/line, custom SVG map/heat map
 │   ├── scope controls         URL updates through the App Router
+│   ├── live mode              timed URL ticks + server-derived index
+│   ├── virtualised table      TanStack Virtual + facts API
 │   ├── assistant              fetch + SSE parser + AbortController
+│   ├── command palette        cmdk + Radix Dialog
 │   └── alert configurator     Zod form, optimistic state, rollback
-└── POST /api/chat
-    └── fixtures.json lookup → token SSE events → done event
+├── POST /api/chat             fixtures lookup → SSE token/done events
+└── GET /api/facts             filtered fact rows for virtualisation
 ```
 
 ```text
 src/
   app/
-    page.tsx                  executive overview
-    analyst/page.tsx          analyst workspace + Suspense boundary
-    assistant/page.tsx        chat surface + trust model
+    page.tsx                  executive overview + live mode
+    analyst/page.tsx          analyst workspace + virtualised facts + live mode
+    assistant/page.tsx        chat surface + dashboard context
     alerts/page.tsx           threshold configurator
     api/chat/route.ts         SSE fixture endpoint
+    api/facts/route.ts        filtered fact rows
     error.tsx / not-found.tsx resilience states
   components/
     charts/                   map, radar, time series, heat map, chart panel
-    dashboard/                tape, KPI band, tables, trend, scope controls
-    analyst/                  region/product tables, selected market panel
-    assistant/                streaming chat
+    dashboard/                tape, KPI band, tables, trend, scope + live controls
+    analyst/                  region/product tables, selected market, virtualised facts
+    assistant/                streaming chat + context
     alerts/                   alert form and rule list
+    command-palette.tsx       Ctrl/Cmd + K navigation
+    form/                     shared Radix select field
     ui/                       shadcn primitives
   lib/
     data/
       schema.ts               Zod data contract and inferred types
       build.ts                immutable DataIndex (aggregations precomputed)
       selectors.ts            portfolio, region, market, product, radar, heatmap
+      live.ts                 deterministic live tick simulation
     chat/
       schema.ts               fixtures + SSE event contract
       citations.ts            citation lookup and URL resolution
+      context.ts              dashboard → assistant context
     alerts/schema.ts          form schema and threshold predicates
-    dashboard/config.ts       map metric config
+    dashboard/config.ts       map metric + live tick parsing
+    dashboard/url.ts          shared analyst URL builder
     format.ts                 deterministic currency/percent/date formatting
   data/
     data.json                 canonical dataset
     fixtures.json             canonical assistant fixtures
     world-map.json            generated SVG paths and country bounds
+  stories/                    Storybook stories for core components
+.storybook/                   Storybook configuration + a11y addon
 scripts/generate-world-map.mjs
 ```
 
@@ -163,17 +205,20 @@ scripts/generate-world-map.mjs
 `data.json` → Zod validation → `createDataIndex` → selectors → Server Components →
 props to client visualisations. The index is built once at module load. Every series
 is pre-aggregated by market, region, product, market×product and region×product so
-dashboard renders do not repeatedly scan the fact table.
+dashboard renders do not repeatedly scan the fact table. Live mode derives a new
+index from a deterministic tick without mutating the canonical dataset. The
+virtualised table fetches a filtered fact payload through `/api/facts`, keeping the
+main RSC payload small.
 
 ### State boundaries
 
 - **Server/data state:** the immutable validated dataset and precomputed index.
-- **URL state:** current region, market, product, period, map metric and radar
-  comparison. This is the source of truth for the dashboard, which makes views
-  shareable and keeps back/forward working.
-- **Client state:** chart focus/roving tab index, chat stream and abort controller,
-  alert form fields and optimistic rule state. No server data is duplicated into
-  client state.
+- **URL state:** current region, market, product, period, map metric, radar
+  comparison, live toggle/tick and assistant context. This is the source of truth
+  for the dashboard, which makes views shareable and keeps back/forward working.
+- **Client state:** chart focus/roving tab index, virtualised scroll position, live
+  timer, command palette, chat stream/abort controller and alert form state. No
+  server dataset is duplicated into client state.
 
 ## Approach and decisions
 
@@ -226,6 +271,22 @@ All panels read from that scope, so map, radar, time series, tables and KPI band
 coordinated. The analyst route is partially prerendered: a Suspense fallback provides
 a fast shell while `searchParams` resolves the selected scope.
 
+### Live mode
+
+The `Live` control writes `live=1` and an incrementing `tick` into the URL. The server
+builds a deterministic derived index where only the latest period's actual/units move
+within a small band; historical rows and the canonical JSON stay untouched. The
+dashboard reloads that scope every six seconds, preserving region/market/product/
+period/comparison. The KPI band receives the tick as an animation key and flashes;
+the live dot is disabled under `prefers-reduced-motion`.
+
+### Virtualised table and command palette
+
+TanStack Virtual mounts only the visible fact rows (about 24 of 1,560) using top and
+bottom spacer rows in a native semantic table. The command palette uses cmdk for
+filtering and active-item keyboard behaviour inside a Radix Dialog, and exposes a
+header trigger plus `Ctrl/Cmd + K`.
+
 ### Forms
 
 The alert form uses a Zod schema, typed field errors and accessible descriptions.
@@ -245,7 +306,8 @@ Targeted at WCAG 2.1 AA:
 - Every chart has a data-table equivalent through `<details>`; the heat map is itself
   a semantic table with signed values in every cell.
 - Screen-reader announcements for chat generation state, form errors and save/rollback.
-- Reduced-motion support for the streaming caret; chart animations are disabled.
+- Reduced-motion support for the streaming caret, live flash and ping indicator;
+  chart animations are disabled.
 - Currency, percentages and periods use shared formatters; dates are pinned to UTC.
 - No colour-only status signals; status text is always present.
 - **Would add with more time:** automated axe checks in CI, a screen-reader pass on
@@ -254,7 +316,7 @@ Targeted at WCAG 2.1 AA:
 ## Testing
 
 ```bash
-npm test        # Vitest: 4 files, 11 tests
+npm test        # Vitest: 6 files, 15 tests
 npm run test:e2e
 ```
 
@@ -262,12 +324,18 @@ Covered:
 
 - Data index/selectors: fact-table totals, canonical statuses, product drill-down,
   heat-map dimensions, top-mover direction, sorted products, radar bounds.
+- Live simulation: latest period changes, historical rows stay intact, derived index
+  differs per tick.
+- Assistant context: scope label/prompt generation and invalid-scope abstention.
 - Citation resolution: explicit labels, dataset-ID fallback and generated URLs.
 - `StatusBadge`: every status renders text, not just colour.
 - Alert configurator: schema rejection, optimistic save and rollback on forced failure.
-- Playwright (5 paths): overview → market drill-down → assistant citation; alert
+- Storybook build with the a11y addon.
+- Playwright (9 paths): overview → market drill-down → assistant citation; alert
   save and forced rollback; shareable drill path with back/forward; assistant
-  abstention and error states; mobile width without horizontal overflow.
+  abstention and error states; mobile width without horizontal overflow; command
+  palette navigation; live updates with preserved scope; assistant dashboard
+  context hand-off; virtualised fact table row count.
 - Build, typecheck, lint and `npm audit` are clean.
 
 Deliberately skipped for time: visual regression tests, full keyboard traversal E2E
@@ -276,21 +344,22 @@ for every chart, axe/Lighthouse CI budgets, and unit tests for Recharts internal
 ## Productionising
 
 - **Performance:** server-rendered data and selectors; client-only interactive islands;
-  no chart animation; 24-period tables are scrollable rather than virtualised; map is
-  pre-generated so no topology library ships to the browser. The heaviest client
-  chunks are Recharts and the map path data.
+  no chart animation; the 1,560-row fact table is virtualised; live ticks derive a
+  server index instead of mutating canonical data; map geometry is pre-generated so no
+  topology library ships to the browser. The heaviest client chunks remain Recharts
+  and the map path data.
 - **Observability:** not wired to a vendor. The error boundary at
   `src/app/error.tsx` captures render failures. Next steps are web-vitals/RUM
   reporting and an error-tracking vendor such as Sentry.
 - **Resilience and hardening:** Zod validation at the data and SSE boundaries;
   explicit error/abstain states; AbortController cleanup; no HTML injection; strict
   TypeScript; deterministic formatters to avoid hydration drift.
-- **Build and serving:** `next build` produces static overview/alerts/assistant pages,
-  a partially prerendered `/analyst` and a dynamic `/api/chat`; SSE responses set
-  `no-cache, no-transform` and disable proxy buffering.
-- **CI/CD:** `.github/workflows/ci.yml` runs install, lint, typecheck, unit tests and
-  build; a second job runs Playwright against a production server. The live Vercel
-  deployment was produced from this repository.
+- **Build and serving:** `next build` produces static alerts, partially prerendered
+  overview/analyst/assistant pages and dynamic `/api/chat` + `/api/facts`; SSE
+  responses set `no-cache, no-transform` and disable proxy buffering.
+- **CI/CD:** `.github/workflows/ci.yml` runs install, lint, typecheck, unit tests,
+  Next build and Storybook build; a second job runs Playwright against a production
+  server. Vercel is connected to the repository.
 
 ## Key decisions and standards
 
@@ -308,8 +377,6 @@ Skipped or deferred:
 
 - Real auth/SSO and role-based UI (explicitly out of scope; mock identity only).
 - Real LLM/RAG backend (explicitly out of scope).
-- Virtualised table, live-updating mode, command palette and Storybook (optional
-  stretch goals).
 - Vendor observability until a deployment target is chosen.
 
 ## AI-assisted development
@@ -330,7 +397,8 @@ and test generation, with the following working rules:
 - Move alert persistence from localStorage to a real service with retries.
 - Use the canonical share snapshot consistently or recompute a documented share
   definition for every period.
+- Replace the prompt-prefix context hand-off with a first-class assistant-context
+  backend contract.
 - Add an accessible scatter/bubble view and a region-vs-region radar mode.
 - Add Lighthouse bundle budgets, error tracking and a full axe pass.
-- Add a command palette and a context-aware assistant once the URL scope is stable.
-- Add the optional live mode and a virtualised analyst table.
+- Add a second Storybook interaction-test pass and visual regression coverage.

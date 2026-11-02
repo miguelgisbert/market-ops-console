@@ -6,5 +6,6 @@ export const dataset: Dataset = datasetSchema.parse(rawData);
 export const dataIndex = createDataIndex(dataset);
 
 export * from "./build";
+export * from "./live";
 export * from "./schema";
 export * from "./selectors";

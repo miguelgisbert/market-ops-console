@@ -1,13 +1,18 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { type AttentionItem, AttentionList } from "@/components/dashboard/attention-list";
 import { KpiBand, type KpiMetric } from "@/components/dashboard/kpi-band";
+import { LiveModeControl } from "@/components/dashboard/live-mode-control";
 import { MarketTable } from "@/components/dashboard/market-table";
 import { MarketTape } from "@/components/dashboard/market-tape";
 import { PortfolioTrend } from "@/components/dashboard/portfolio-trend";
 import { TopMovers } from "@/components/dashboard/top-movers";
+import { parseLiveTick } from "@/lib/dashboard/config";
 import {
+  createLiveDataIndex,
   dataIndex,
+  dataset,
   getMarketSummaries,
   getPortfolioSummary,
   getTopMovers,
@@ -15,10 +20,21 @@ import {
 } from "@/lib/data";
 import { formatCurrency, formatPercent, formatPeriodLabel } from "@/lib/format";
 
-export default function OverviewPage() {
-  const markets = getMarketSummaries(dataIndex);
-  const portfolio = getPortfolioSummary(dataIndex, { markets });
-  const movers = getTopMovers(dataIndex, { limit: 3, markets });
+export default function OverviewPage({ searchParams }: PageProps<"/">) {
+  return (
+    <Suspense fallback={<OverviewFallback />}>
+      <OverviewContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function OverviewContent({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  const params = await searchParams;
+  const tick = parseLiveTick(params);
+  const index = tick === null ? dataIndex : createLiveDataIndex(dataset, tick);
+  const markets = getMarketSummaries(index);
+  const portfolio = getPortfolioSummary(index, { markets });
+  const movers = getTopMovers(index, { limit: 3, markets });
   const periodLabel = formatPeriodLabel(portfolio.latestPeriod);
 
   const attention: AttentionItem[] = markets
@@ -83,29 +99,32 @@ export default function OverviewPage() {
             the forecast is slipping.
           </p>
         </div>
-        <div className="flex shrink-0 items-stretch border bg-card">
-          <span
-            aria-current="page"
-            className="border-r bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
-          >
-            Executive view
-          </span>
-          <Link
-            href="/analyst"
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Analyst view
-            <ArrowUpRight aria-hidden="true" className="size-3" />
-          </Link>
+        <div className="flex shrink-0 flex-wrap items-stretch gap-2">
+          <LiveModeControl path="/" baseQuery="" live={tick !== null} tick={tick ?? 0} />
+          <div className="flex items-stretch border bg-card">
+            <span
+              aria-current="page"
+              className="border-r bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
+            >
+              Executive view
+            </span>
+            <Link
+              href="/analyst"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Analyst view
+              <ArrowUpRight aria-hidden="true" className="size-3" />
+            </Link>
+          </div>
         </div>
       </header>
 
       <MarketTape markets={markets} />
 
-      <KpiBand metrics={metrics} />
+      <KpiBand metrics={metrics} liveKey={tick ?? undefined} />
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <section aria-labelledby="portfolio-trend-heading" className="border bg-card">
+        <section aria-labelledby="portfolio-trend-heading" className="min-w-0 border bg-card">
           <div className="border-b px-4 py-3">
             <h2 id="portfolio-trend-heading" className="text-sm font-semibold">
               Portfolio trajectory
@@ -129,6 +148,30 @@ export default function OverviewPage() {
         <MarketTable markets={markets} />
         <AttentionList items={attention} />
       </div>
+    </div>
+  );
+}
+
+function OverviewFallback() {
+  return (
+    <div className="space-y-7" role="status" aria-busy="true" aria-label="Loading overview">
+      <header className="border-b pb-5">
+        <div className="h-3 w-48 bg-muted" />
+        <div className="mt-3 h-9 w-80 bg-muted" />
+        <div className="mt-3 h-3 w-full max-w-xl bg-muted" />
+      </header>
+      <div className="h-14 border bg-card" />
+      <div className="grid border sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((item) => (
+          <div key={item} className="border-b px-4 py-4 lg:border-b-0 lg:border-r">
+            <div className="h-2.5 w-24 bg-muted" />
+            <div className="mt-3 h-7 w-28 bg-muted" />
+            <div className="mt-2 h-2.5 w-32 bg-muted" />
+          </div>
+        ))}
+      </div>
+      <div className="h-64 border bg-card" />
+      <div className="h-96 border bg-card" />
     </div>
   );
 }

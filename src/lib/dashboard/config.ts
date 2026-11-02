@@ -21,3 +21,14 @@ export const marketStatusOptions: Array<{ value: MarketStatus; label: string }> 
   { value: "at_risk", label: "At risk" },
   { value: "off_track", label: "Off track" },
 ];
+
+export function parseLiveTick(params: {
+  live?: string | string[];
+  tick?: string | string[];
+}): number | null {
+  const live = Array.isArray(params.live) ? params.live[0] : params.live;
+  if (live !== "1") return null;
+  const raw = Array.isArray(params.tick) ? params.tick[0] : params.tick;
+  const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}

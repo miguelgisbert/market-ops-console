@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { buildAnalystHref } from "@/lib/dashboard/url";
 import type { ProductSummary } from "@/lib/data/selectors";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,7 @@ export function ProductTable({
             >
               <TableCell className="pl-4">
                 <Link
-                  href={hrefForProduct(product.id, baseParams)}
+                  href={buildAnalystHref(baseParams, { product: product.id })}
                   aria-current={product.id === selectedProductId ? "true" : undefined}
                   className="font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
@@ -83,15 +84,4 @@ export function ProductTable({
       </Table>
     </section>
   );
-}
-
-function hrefForProduct(productId: string, baseParams: Record<string, string | undefined>): string {
-  const params = new URLSearchParams();
-  if (baseParams.region) params.set("region", baseParams.region);
-  if (baseParams.market) params.set("market", baseParams.market);
-  if (baseParams.period) params.set("period", baseParams.period);
-  if (baseParams.metric) params.set("metric", baseParams.metric);
-  if (baseParams.compare) params.set("compare", baseParams.compare);
-  params.set("product", productId);
-  return `/analyst?${params.toString()}`;
 }

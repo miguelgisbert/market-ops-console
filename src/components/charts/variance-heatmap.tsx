@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { buildAnalystHref } from "@/lib/dashboard/url";
 import type { HeatmapRow } from "@/lib/data/selectors";
 import { formatPercent, formatPeriodLabel, formatPeriodShort, statusLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -50,14 +51,7 @@ export function VarianceHeatmap({
   }
 
   function selectCell(row: HeatmapRow, period: string) {
-    const params = new URLSearchParams();
-    if (baseParams.region) params.set("region", baseParams.region);
-    if (baseParams.product) params.set("product", baseParams.product);
-    if (baseParams.metric) params.set("metric", baseParams.metric);
-    if (baseParams.compare) params.set("compare", baseParams.compare);
-    params.set("market", row.marketId);
-    params.set("period", period);
-    router.push(`/analyst?${params.toString()}`, { scroll: false });
+    router.push(buildAnalystHref(baseParams, { market: row.marketId, period }), { scroll: false });
   }
 
   function onKeyDown(

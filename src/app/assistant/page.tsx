@@ -1,13 +1,34 @@
 import { Database, Sparkles } from "lucide-react";
+import { Suspense } from "react";
 import { AssistantChat } from "@/components/assistant/assistant-chat";
 import { createCitationLookup } from "@/lib/chat/citations";
-import { dataset } from "@/lib/data";
+import { buildAssistantContext } from "@/lib/chat/context";
+import { dataIndex, dataset } from "@/lib/data";
 
 export const metadata = {
   title: "Assistant",
 };
 
-export default function AssistantPage() {
+export default function AssistantPage({ searchParams }: PageProps<"/assistant">) {
+  return (
+    <Suspense fallback={<AssistantFallback />}>
+      <AssistantContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function AssistantContent({
+  searchParams,
+}: {
+  searchParams: PageProps<"/assistant">["searchParams"];
+}) {
+  const params = await searchParams;
+  const context = buildAssistantContext(dataIndex, {
+    region: typeof params.region === "string" ? params.region : undefined,
+    market: typeof params.market === "string" ? params.market : undefined,
+    product: typeof params.product === "string" ? params.product : undefined,
+    period: typeof params.period === "string" ? params.period : undefined,
+  });
   const lookup = createCitationLookup({
     markets: dataset.markets.map((market) => ({
       id: market.id,
@@ -34,7 +55,7 @@ export default function AssistantPage() {
       </header>
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,2.1fr)_minmax(300px,1fr)]">
-        <AssistantChat lookup={lookup} />
+        <AssistantChat lookup={lookup} context={context ?? undefined} />
 
         <aside className="space-y-4">
           <section className="border bg-card">
@@ -116,6 +137,22 @@ export default function AssistantPage() {
             </p>
           </section>
         </aside>
+      </div>
+    </div>
+  );
+}
+
+function AssistantFallback() {
+  return (
+    <div className="space-y-7" role="status" aria-busy="true" aria-label="Loading assistant">
+      <header className="border-b pb-5">
+        <div className="h-3 w-44 bg-muted" />
+        <div className="mt-3 h-9 w-72 bg-muted" />
+        <div className="mt-3 h-3 w-full max-w-xl bg-muted" />
+      </header>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2.1fr)_minmax(300px,1fr)]">
+        <div className="h-[540px] border bg-card" />
+        <div className="h-[420px] border bg-card" />
       </div>
     </div>
   );

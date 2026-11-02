@@ -14,11 +14,15 @@ const toneStyles = {
   warning: "text-status-atrisk",
 };
 
-export function KpiBand({ metrics }: { metrics: KpiMetric[] }) {
+export function KpiBand({ metrics, liveKey }: { metrics: KpiMetric[]; liveKey?: number }) {
   return (
     <section
+      key={liveKey}
       aria-label="Portfolio summary"
-      className="grid divide-y border bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x"
+      className={cn(
+        "grid divide-y border bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x",
+        liveKey ? "live-update" : undefined,
+      )}
     >
       {metrics.map((metric) => (
         <div key={metric.label} className="px-4 py-4">

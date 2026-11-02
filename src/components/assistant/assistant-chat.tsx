@@ -4,6 +4,7 @@ import { CircleAlert, Database, Send, Sparkles, Square } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { type CitationLookup, type ResolvedCitation, resolveCitation } from "@/lib/chat/citations";
+import type { AssistantContext } from "@/lib/chat/context";
 import {
   type AnswerKind,
   type Citation,
@@ -63,7 +64,13 @@ function confidenceNote(confidence: Confidence, kind?: AnswerKind): string {
   return "Treat this as directional. The dataset may not support a precise answer.";
 }
 
-export function AssistantChat({ lookup }: { lookup: CitationLookup }) {
+export function AssistantChat({
+  lookup,
+  context,
+}: {
+  lookup: CitationLookup;
+  context?: AssistantContext;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streamingId, setStreamingId] = useState<string | null>(null);
@@ -129,7 +136,9 @@ export function AssistantChat({ lookup }: { lookup: CitationLookup }) {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed }),
+        body: JSON.stringify({
+          question: context ? `${context.prompt} ${trimmed}` : trimmed,
+        }),
         signal: controller.signal,
       });
 
@@ -257,6 +266,20 @@ export function AssistantChat({ lookup }: { lookup: CitationLookup }) {
         </span>
       </div>
 
+      {context ? (
+        <div className="flex flex-wrap items-center gap-2 border-b bg-accent/30 px-4 py-2 text-[11px]">
+          <Sparkles aria-hidden="true" className="size-3 text-primary" />
+          <span className="font-medium">Dashboard context</span>
+          <span className="text-muted-foreground">{context.label}</span>
+          <Link
+            href={context.clearHref}
+            className="ml-auto font-mono text-[10px] text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Clear
+          </Link>
+        </div>
+      ) : null}
+
       <section
         className="min-h-[360px] max-h-[58vh] overflow-y-auto px-4 py-5"
         aria-label="Conversation"
@@ -277,7 +300,10 @@ export function AssistantChat({ lookup }: { lookup: CitationLookup }) {
               outside the dataset.
             </p>
             <div className="mt-5 grid w-full gap-2 sm:grid-cols-2">
-              {suggestedQuestions.map((question) => (
+              {(context
+                ? ["What is driving this view?", ...suggestedQuestions]
+                : suggestedQuestions
+              ).map((question) => (
                 <button
                   key={question}
                   type="button"

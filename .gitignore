@@ -59,3 +59,10 @@ frontend-assignment-starter-pack/
 
 # Local agent tooling
 .codex/
+
+*storybook.log
+storybook-static
+
+# Storybook build output
+/storybook-static/
+debug-storybook.log

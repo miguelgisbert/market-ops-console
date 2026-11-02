@@ -16,6 +16,8 @@ export type ScopeState = {
   period?: string;
   metric?: MapMetric;
   compare?: string;
+  live?: string;
+  tick?: string;
 };
 
 const allValue = "__all__";
@@ -44,6 +46,10 @@ export function ScopeControls({
     if (next.period) params.set("period", next.period);
     if (next.metric) params.set("metric", next.metric);
     if (next.compare) params.set("compare", next.compare);
+    if (next.live === "1") {
+      params.set("live", "1");
+      if (next.tick) params.set("tick", next.tick);
+    }
     const query = params.toString();
     startTransition(() => {
       router.push(query ? `/analyst?${query}` : "/analyst", { scroll: false });

@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { buildAnalystHref } from "@/lib/dashboard/url";
 import type { RegionSummary } from "@/lib/data/selectors";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ export function RegionTable({
             >
               <TableCell className="pl-4">
                 <Link
-                  href={hrefForRegion(region.id, baseParams)}
+                  href={buildAnalystHref(baseParams, { region: region.id, market: undefined })}
                   aria-current={region.id === selectedRegionId ? "true" : undefined}
                   className="font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
@@ -78,14 +79,4 @@ export function RegionTable({
       </Table>
     </section>
   );
-}
-
-function hrefForRegion(regionId: string, baseParams: Record<string, string | undefined>): string {
-  const params = new URLSearchParams();
-  if (baseParams.product) params.set("product", baseParams.product);
-  if (baseParams.period) params.set("period", baseParams.period);
-  if (baseParams.metric) params.set("metric", baseParams.metric);
-  if (baseParams.compare) params.set("compare", baseParams.compare);
-  params.set("region", regionId);
-  return `/analyst?${params.toString()}`;
 }
