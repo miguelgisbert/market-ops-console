@@ -121,6 +121,7 @@ test("carries the dashboard scope into the assistant", async ({ page }) => {
 
 test("virtualises the full fact table", async ({ page }) => {
   await page.goto("/analyst");
+  await page.getByRole("heading", { name: "Virtualised fact table" }).scrollIntoViewIfNeeded();
   const table = page.getByRole("table", { name: /Virtualised fact table/ });
   await expect(table).toHaveAttribute("aria-rowcount", "1561");
   await expect(page.getByText(/^Mounted /)).toBeVisible();

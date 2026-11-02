@@ -92,6 +92,6 @@ The brief marks all five as optional; all are implemented.
 - Chart animations are disabled; streaming updates are token-sized and abortable.
 - Horizontal mobile overflow is contained at the scroll container; E2E regression
   test added.
-- Virtualised table renders only visible rows; live simulation updates via the URL
-  tick without mutating canonical data; command palette and context lookup stay
-  client-light.
+- Virtualised table renders only visible rows and lazy-fetches after entering the
+  viewport; live simulation updates via the URL tick without mutating canonical data;
+  command palette and context lookup stay client-light.

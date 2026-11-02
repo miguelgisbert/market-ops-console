@@ -344,10 +344,10 @@ for every chart, axe/Lighthouse CI budgets, and unit tests for Recharts internal
 ## Productionising
 
 - **Performance:** server-rendered data and selectors; client-only interactive islands;
-  no chart animation; the 1,560-row fact table is virtualised; live ticks derive a
-  server index instead of mutating canonical data; map geometry is pre-generated so no
-  topology library ships to the browser. The heaviest client chunks remain Recharts
-  and the map path data.
+  no chart animation; the 1,560-row fact table is virtualised and lazy-fetches when
+  it enters the viewport; live ticks derive a server index instead of mutating
+  canonical data; map geometry is pre-generated so no topology library ships to the
+  browser. The heaviest client chunks remain Recharts and the map path data.
 - **Observability:** not wired to a vendor. The error boundary at
   `src/app/error.tsx` captures render failures. Next steps are web-vitals/RUM
   reporting and an error-tracking vendor such as Sentry.

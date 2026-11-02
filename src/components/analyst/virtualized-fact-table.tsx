@@ -46,6 +46,8 @@ export function VirtualizedFactTable({
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [activated, setActivated] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasLoadedRef = useRef(false);
 
@@ -60,6 +62,24 @@ export function VirtualizedFactTable({
   }`;
 
   useEffect(() => {
+    if (activated) return;
+    const section = sectionRef.current;
+    if (!section) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setActivated(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [activated]);
+
+  useEffect(() => {
+    if (!activated) return;
     const controller = new AbortController();
     if (hasLoadedRef.current) setUpdating(true);
     else setLoading(true);
@@ -85,7 +105,7 @@ export function VirtualizedFactTable({
       });
 
     return () => controller.abort();
-  }, [requestUrl]);
+  }, [activated, requestUrl]);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -100,7 +120,11 @@ export function VirtualizedFactTable({
     virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0);
 
   return (
-    <section aria-labelledby="fact-table-heading" className="min-w-0 border bg-card">
+    <section
+      ref={sectionRef}
+      aria-labelledby="fact-table-heading"
+      className="min-w-0 border bg-card"
+    >
       <div className="flex flex-wrap items-end justify-between gap-2 border-b px-4 py-3">
         <div>
           <h2 id="fact-table-heading" className="text-sm font-semibold">

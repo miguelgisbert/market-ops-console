@@ -324,6 +324,8 @@ async function AnalystContent({
               product: productId,
               period,
               metric,
+              live: liveParam,
+              tick: tickParam,
             }}
           />
           <div className="mt-3">
