@@ -29,6 +29,7 @@ const metrics: KpiMetric[] = [
 
 const meta = {
   title: "Dashboard/KPI band",
+  tags: ["autodocs"],
   component: KpiBand,
   args: { metrics },
   parameters: { layout: "padded" },

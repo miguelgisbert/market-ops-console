@@ -3,6 +3,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge";
 
 const meta = {
   title: "Dashboard/Status badge",
+  tags: ["autodocs"],
   component: StatusBadge,
   args: { status: "on_track" },
   argTypes: {

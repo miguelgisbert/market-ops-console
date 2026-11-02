@@ -79,7 +79,8 @@ npm audit           # 0 vulnerabilities
 
 ### Storybook
 
-- Stories for StatusBadge, KpiBand, MarketTape, AlertConfigurator and TimeSeriesChart.
+- Stories for StatusBadge, KpiBand, MarketTape, MarketTable, RegionTable, ProductTable,
+  AttentionList, PortfolioTrend, AlertConfigurator, TimeSeriesChart and SelectField.
 - Accessibility addon enabled.
 - `npm run storybook` / `npm run build-storybook`.
 - Live static Storybook: https://market-ops-storybook.vercel.app

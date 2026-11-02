@@ -49,6 +49,7 @@ const data: SeriesPoint[] = [
 
 const meta = {
   title: "Charts/Time series",
+  tags: ["autodocs"],
   component: TimeSeriesChart,
   args: {
     data,

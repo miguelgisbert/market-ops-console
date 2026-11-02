@@ -52,6 +52,7 @@ const markets: MarketSummary[] = [
 
 const meta = {
   title: "Dashboard/Market tape",
+  tags: ["autodocs"],
   component: MarketTape,
   args: { markets },
   parameters: { layout: "padded" },

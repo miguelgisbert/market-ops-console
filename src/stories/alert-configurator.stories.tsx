@@ -3,6 +3,7 @@ import { AlertConfigurator } from "@/components/alerts/alert-configurator";
 
 const meta = {
   title: "Alerts/Configurator",
+  tags: ["autodocs"],
   component: AlertConfigurator,
   args: {
     regions: [

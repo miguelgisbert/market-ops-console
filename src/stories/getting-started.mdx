@@ -1,0 +1,77 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Getting started" />
+
+# Market Ops component library
+
+These stories document the dashboard primitives used across the Market Ops console.
+They share the same Tailwind tokens as the application, so new features can reuse
+them without reimplementing colours, spacing or status semantics.
+
+## Status badge
+
+```tsx
+import { StatusBadge } from "@/components/dashboard/status-badge";
+
+<StatusBadge status="at_risk" />;
+```
+
+## KPI band
+
+```tsx
+import { KpiBand } from "@/components/dashboard/kpi-band";
+
+<KpiBand
+  metrics={[
+    { label: "Portfolio revenue", value: "$22.9M", detail: "May 2026" },
+    { label: "Growth", value: "+7.3%", detail: "vs prior year", tone: "positive" },
+  ]}
+/>;
+```
+
+## Dashboard tables
+
+`MarketTable`, `RegionTable` and `ProductTable` accept typed summaries from
+`src/lib/data/selectors.ts`. They are Server Components; pass data from selectors and
+let the table own formatting and status rendering.
+
+```tsx
+import { MarketTable } from "@/components/dashboard/market-table";
+import { getMarketSummaries, dataIndex } from "@/lib/data";
+
+const markets = getMarketSummaries(dataIndex);
+
+<MarketTable markets={markets} selectedMarketId="de" />;
+```
+
+## Form select
+
+`SelectField` wraps the shadcn/Radix select with the console's label, trigger,
+focus-ring and error conventions.
+
+```tsx
+import { SelectField } from "@/components/form/select-field";
+
+<SelectField
+  id="region"
+  label="Region"
+  value={region}
+  options={[
+    { value: "na", label: "North America" },
+    { value: "eu", label: "Europe" },
+  ]}
+  onValueChange={setRegion}
+/>;
+```
+
+## Design tokens
+
+Tokens live in `src/app/globals.css`:
+
+- `--background`, `--card`, `--foreground`, `--muted-foreground`
+- `--primary`, `--border`, `--ring`
+- `--status-ontrack`, `--status-atrisk`, `--status-offtrack`
+- `--chart-1` through `--chart-5`
+
+Use semantic tokens rather than hard-coded colours. Status labels always include
+text or an icon, never colour alone.
